@@ -1,0 +1,40 @@
+{% extends "dash_base.html" %}
+{% block title %}Check-in · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Front Desk Check-in</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="panel" style="max-width:480px;">
+    <h2>Scan or enter code</h2>
+    <form id="checkForm" style="display:flex; gap:10px;">
+      <input type="text" id="codeInput" placeholder="Scan QR or type member ID (BM-000123)" autofocus style="flex:1; background:#000; border:1px solid #ffffff2c; color:#fff; padding:12px 14px;">
+      <button class="btn">CHECK IN</button>
+    </form>
+    <div id="checkResult" style="margin-top:16px; font-size:.95rem;"></div>
+  </div>
+  <div class="panel">
+    <h2>Today's attendance ({{ today|length }})</h2>
+    <div class="dt-wrap"><table class="dt"><tr><th>Member</th><th>In</th><th>Out</th><th>Method</th></tr>
+      {% for a in today %}
+      <tr><td>{{ a.member.user.full_name }}</td><td>{{ a.checked_in_at|ftime }}</td><td>{{ a.checked_out_at|ftime if a.checked_out_at else '—' }}</td><td>{{ a.method }}</td></tr>
+      {% else %}<tr><td colspan="4" class="empty-state">No check-ins yet today.</td></tr>{% endfor %}
+    </table></div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById('checkForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const input=document.getElementById('codeInput'), box=document.getElementById('checkResult');
+  if(!input.value.trim()) return;
+  const data=await api('/api/attendance/check', {code:input.value.trim()});
+  if(data.ok){
+    box.innerHTML=`<div class="flash ok">${data.action==='checked_in' ? '✓ Checked in' : '↩ Checked out'}: <b>${data.member}</b> at ${data.at}${data.plan ? ' · '+data.plan : ''}</div>`;
+    setTimeout(()=>location.reload(), 1400);
+  } else {
+    box.innerHTML=`<div class="flash error">${data.error}</div>`;
+  }
+  input.value=''; input.focus();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Sign up · {{ gym_name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dash.css') }}">{% endblock %}
+{% block body %}
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:radial-gradient(ellipse at 50% 0%,#ff6a1a14,transparent 60%), var(--black);">
+  <div style="width:100%; max-width:420px;">
+    <div style="text-align:center; margin-bottom:26px;">
+      <a href="/" style="font-family:var(--font-d); font-size:1.4rem; color:#fff; text-decoration:none;">BEAST<span style="color:var(--orange)">MODE</span></a>
+      <p style="color:#a8a89f; margin-top:8px; font-size:.9rem;">Create your account and start your journey.</p>
+    </div>
+    <form method="post" class="panel" novalidate><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-grid">
+        <div class="field">
+          <label>Full name</label>
+          <input type="text" name="full_name" value="{{ form.full_name or '' }}" class="{{ 'err-field' if errors.full_name }}" required>
+          {% if errors.full_name %}<div class="err">{{ errors.full_name }}</div>{% endif %}
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" name="email" value="{{ form.email or '' }}" class="{{ 'err-field' if errors.email }}" required>
+          {% if errors.email %}<div class="err">{{ errors.email }}</div>{% endif %}
+        </div>
+        <div class="field">
+          <label>Phone (optional)</label>
+          <input type="tel" name="phone" value="{{ form.phone or '' }}" class="{{ 'err-field' if errors.phone }}">
+          {% if errors.phone %}<div class="err">{{ errors.phone }}</div>{% endif %}
+        </div>
+        <div class="form-grid two">
+          <div class="field">
+            <label>Password</label>
+            <input type="password" name="password" class="{{ 'err-field' if errors.password }}" required>
+            {% if errors.password %}<div class="err">{{ errors.password }}</div>{% endif %}
+          </div>
+          <div class="field">
+            <label>Confirm password</label>
+            <input type="password" name="password2" class="{{ 'err-field' if errors.password2 }}" required>
+            {% if errors.password2 %}<div class="err">{{ errors.password2 }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="checkrow">
+          <input type="checkbox" id="terms" name="terms" required>
+          <label for="terms" style="margin:0; font-weight:400;">I agree to the <a href="/terms" style="color:var(--orange)">terms</a>.</label>
+        </div>
+        {% if errors.terms %}<div class="err" style="margin-top:-10px">{{ errors.terms }}</div>{% endif %}
+        <button type="submit" class="btn" style="width:100%; justify-content:center; padding:14px;">CREATE ACCOUNT</button>
+      </div>
+    </form>
+    <p style="text-align:center; margin-top:18px; color:#a8a89f; font-size:.86rem;">
+      Already have an account? <a href="{{ url_for('auth.login') }}" style="color:var(--orange)">Log in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

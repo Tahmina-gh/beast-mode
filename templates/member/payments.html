@@ -1,0 +1,32 @@
+{% extends "dash_base.html" %}
+{% block title %}Payments · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Payments</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="panel">
+    <div class="dt-wrap"><table class="dt"><tr><th>Description</th><th>Amount</th><th>Date</th><th>Status</th><th></th></tr>
+      {% for p in items %}
+      <tr>
+        <td>{{ p.description }}</td><td>${{ '%.2f'|format(p.amount_cents/100) }}</td><td>{{ p.created_at|fdt }}</td>
+        <td><span class="badge {{ 'ok' if p.status=='paid' else ('warn' if p.status=='pending' else 'bad') }}">{{ p.status }}{% if p.refund_status=='requested' %} · refund pending{% endif %}</span></td>
+        <td class="inline-actions">
+          {% if p.status=='pending' %}<button class="btn sm" onclick="retry({{ p.id }})">Complete payment</button>{% endif %}
+          {% if p.status=='paid' %}<a class="btn sm outline" href="/member/payments/{{ p.id }}/receipt">Receipt</a>{% endif %}
+          {% if p.status=='paid' and p.refund_status=='none' %}<button class="btn sm danger" data-action="/api/payments/{{ p.id }}/refund-request" data-confirm="Request a refund for this payment?">Request refund</button>{% endif %}
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="5" class="empty-state">No payments yet.</td></tr>{% endfor %}
+    </table></div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+async function retry(id){
+  const data=await api(`/api/payments/${id}/checkout`, {});
+  if(data.url) location.href=data.url;
+  else if(data.manual) toast(data.message,'ok');
+  else toast(data.error||'Could not start payment.','error');
+}
+</script>
+{% endblock %}

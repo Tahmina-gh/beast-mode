@@ -1,0 +1,31 @@
+{% extends "dash_base.html" %}
+{% block title %}Schedule · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>My Schedule</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="panel">
+    <h2>Sessions</h2>
+    <div class="dt-wrap"><table class="dt"><tr><th>Member</th><th>Service</th><th>When</th><th>Status</th><th></th></tr>
+      {% for s in ses %}
+      <tr>
+        <td>{{ s.member.user.full_name }}</td><td>{{ s.service }}</td><td>{{ s.starts_at|fdt }}</td>
+        <td><span class="badge {{ 'ok' if s.status=='confirmed' else 'warn' }}">{{ s.status }}</span></td>
+        <td class="inline-actions">
+          <button class="btn sm" data-action="/api/sessions/{{ s.id }}/status" data-body='{"status":"completed"}'>Complete</button>
+          <button class="btn sm outline" data-action="/api/sessions/{{ s.id }}/status" data-body='{"status":"no_show"}'>No-show</button>
+          <button class="btn sm danger" data-action="/api/sessions/{{ s.id }}/cancel" data-confirm="Cancel this session?">Cancel</button>
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="5" class="empty-state">No upcoming sessions.</td></tr>{% endfor %}
+    </table></div>
+  </div>
+  <div class="panel">
+    <h2>My classes</h2>
+    <div class="dt-wrap"><table class="dt"><tr><th>Class</th><th>When</th><th>Booked</th></tr>
+      {% for c in classes %}
+      <tr><td>{{ c.name }}</td><td>{{ c.starts_at|fdt }}</td><td>{{ c.booked }}/{{ c.capacity }}</td></tr>
+      {% else %}<tr><td colspan="3" class="empty-state">No classes assigned to you.</td></tr>{% endfor %}
+    </table></div>
+  </div>
+</div>
+{% endblock %}

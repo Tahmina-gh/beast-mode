@@ -1,0 +1,17 @@
+{% extends "dash_base.html" %}
+{% block title %}My Members · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>My Members</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="panel">
+    <div class="dt-wrap"><table class="dt"><tr><th>Name</th><th>Plan</th><th>Streak</th><th>Last visit</th><th></th></tr>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.m.user.full_name }}</td><td>{{ r.plan }}</td><td>🔥 {{ r.streak }}</td><td>{{ r.last|fdt if r.last else '—' }}</td>
+        <td><a class="btn sm outline" href="/trainer/members/{{ r.m.id }}">View progress</a></td>
+      </tr>
+      {% else %}<tr><td colspan="5" class="empty-state">No members assigned or booked with you yet.</td></tr>{% endfor %}
+    </table></div>
+  </div>
+</div>
+{% endblock %}

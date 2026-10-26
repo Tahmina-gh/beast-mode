@@ -1,0 +1,27 @@
+{% extends "dash_base.html" %}
+{% block title %}{{ m.user.full_name }} · Progress{% endblock %}
+{% block dash_top %}<h1>{{ m.user.full_name }} — Progress</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="cards">
+    <div class="kpi"><div class="v">{{ m.member_code }}</div><div class="l">Member ID</div></div>
+    <div class="kpi"><div class="v streak-flame">🔥 {{ streak }}</div><div class="l">Week Streak</div></div>
+  </div>
+  <div class="panel">
+    <h2>Attendance — last 12 weeks</h2>
+    <div class="mini-bars">
+      {% set mx = (weekly|map(attribute=1)|max) or 1 %}
+      {% for lbl, v in weekly %}<i style="height:{{ (v/mx*100)|round|int if mx else 0 }}%;"></i>{% endfor %}
+    </div>
+    <div class="lbl">{% for lbl, v in weekly %}<span>{{ lbl }}</span>{% endfor %}</div>
+  </div>
+  <div class="panel">
+    <h2>Goals</h2>
+    {% for g in goals %}<div class="panel-row"><span>{{ g.goal }}</span><span class="badge {{ 'ok' if g.status=='achieved' else 'warn' }}">{{ g.status }}</span></div>
+    {% else %}<div class="empty-state">No goals logged.</div>{% endfor %}
+  </div>
+  {% if lifts %}
+  <div class="panel"><h2>Personal records tracked</h2><p class="muted">{{ lifts|join(', ') }}</p></div>
+  {% endif %}
+</div>
+{% endblock %}

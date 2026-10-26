@@ -1,0 +1,55 @@
+{% extends "dash_base.html" %}
+{% block title %}{{ title }} · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>{{ title }} {% if pg %}({{ pg.total }}){% endif %}</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  {% if tabs %}
+  <div class="tabs">{% for label, href, active in tabs %}<a href="{{ href }}" class="{{ 'active' if active }}">{{ label }}</a>{% endfor %}</div>
+  {% endif %}
+  {% if filters %}
+  <form class="filters">
+    {% for f in filters %}
+    <div class="field">
+      <label>{{ f.label }}</label>
+      {% if f.type == 'select' %}
+      <select name="{{ f.name }}">{% for v, l in f.options %}<option value="{{ v }}" {{ 'selected' if v==f.value }}>{{ l }}</option>{% endfor %}</select>
+      {% else %}
+      <input type="{{ f.type }}" name="{{ f.name }}" value="{{ f.value }}">
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% if request.args.get('type') %}<input type="hidden" name="type" value="{{ request.args.get('type') }}">{% endif %}
+    <button class="btn sm">Filter</button>
+    {% if request.args %}<a href="{{ request.path }}{{ '?type='+request.args.get('type') if request.args.get('type') else '' }}" class="btn sm outline">Clear</a>{% endif %}
+  </form>
+  {% endif %}
+  <div class="panel">
+    <div class="dt-wrap"><table class="dt">
+      <tr>{% for c in cols %}<th>{{ c }}</th>{% endfor %}<th></th></tr>
+      {% for row in rows %}
+      <tr>
+        {% for cell in row.cells %}
+        <td>
+          {% if cell is mapping %}
+            {% if cell.badge %}<span class="badge {{ cell.badge }}">{{ cell.text }}</span>{% elif cell.href %}<a href="{{ cell.href }}" style="color:var(--orange)">{{ cell.text }}</a>{% else %}{{ cell.text }}{% endif %}
+          {% else %}{{ cell }}{% endif %}
+        </td>
+        {% endfor %}
+        <td class="inline-actions">
+          {% for a in row.actions %}
+            {% if a.href %}<a class="btn sm outline" href="{{ a.href }}">{{ a.label }}</a>
+            {% else %}<button class="btn sm {{ a.style }}" data-action="{{ a.api }}" {% if a.body %}data-body='{{ a.body|tojson }}'{% endif %} {% if a.confirm %}data-confirm="{{ a.confirm }}"{% endif %} {% if a.prompt %}data-prompt='{{ a.prompt|tojson }}'{% endif %}>{{ a.label }}</button>
+            {% endif %}
+          {% endfor %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="{{ cols|length + 1 }}" class="empty-state">{{ empty or "Nothing here yet." }}</td></tr>
+      {% endfor %}
+    </table></div>
+    {% if pg and pg.pages > 1 %}
+    <div class="pager">{% for n in range(1, pg.pages+1) %}<a href="{{ qs(page=n) }}" class="{{ 'cur' if n==pg.page }}">{{ n }}</a>{% endfor %}</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

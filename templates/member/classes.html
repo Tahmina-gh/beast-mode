@@ -1,0 +1,50 @@
+{% extends "dash_base.html" %}
+{% block title %}Classes · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Book a Class</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  {% if not mem %}
+  <div class="flash info">You need an active membership to book classes. <a href="/member/membership" style="color:var(--volt)">View plans →</a></div>
+  {% endif %}
+  <div class="filters">
+    <button class="btn sm cat-f outline" data-cat="">All</button>
+    {% for c in categories %}<button class="btn sm cat-f outline" data-cat="{{ c }}">{{ c }}</button>{% endfor %}
+  </div>
+  <div class="grid3" id="classGrid">
+    {% for c in items %}
+    {% set b = mine.get(c.id) %}
+    <div class="panel" data-cat="{{ c.category }}" style="margin-bottom:0;">
+      <div style="font-size:.68rem; letter-spacing:.1em; color:var(--volt); font-weight:800;">{{ c.category.upper() }}</div>
+      <h2 style="margin:4px 0 10px;">{{ c.name }}</h2>
+      <div class="muted" style="font-size:.85rem; margin-bottom:6px;">{{ c.starts_at|fdt }} · {{ c.duration_minutes }} min</div>
+      <div class="muted" style="font-size:.85rem; margin-bottom:6px;">{{ c.location }} · {{ c.trainer.name if c.trainer else 'Staff' }} · Difficulty {{ '★'*c.difficulty }}{{ '☆'*(5-c.difficulty) }}</div>
+      <div style="font-weight:700; color:{{ 'var(--red)' if c.is_full else 'var(--orange)' }}; margin-bottom:14px;">{{ c.booked }}/{{ c.capacity }} spots booked · {{ 'FULLY BOOKED' if c.is_full else c.remaining ~ ' remaining' }}</div>
+      {% if b and b.status in ('booked','attended') %}
+        <button class="btn outline sm" disabled>✓ BOOKED</button>
+      {% elif b and b.status=='offered' %}
+        <button class="btn sm" data-action="/api/bookings/{{ b.id }}/claim">CLAIM SPOT ({{ (b.offer_expires_at - now())|string }} left)</button>
+      {% elif b and b.status=='waitlist' %}
+        <button class="btn outline sm" disabled>ON WAITLIST</button>
+      {% elif c.is_full %}
+        <button class="btn outline sm" data-action="/api/classes/{{ c.id }}/waitlist" {{ 'disabled' if not mem }}>JOIN WAITLIST</button>
+      {% else %}
+        <button class="btn sm" data-action="/api/classes/{{ c.id }}/book" {{ 'disabled' if not mem }}>BOOK CLASS</button>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="empty-state">No classes scheduled in the next 3 weeks.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('.cat-f').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.cat-f').forEach(x=>x.style.opacity='.6'); b.style.opacity='1';
+    const cat=b.dataset.cat;
+    document.querySelectorAll('#classGrid > div[data-cat]').forEach(c=>{ c.style.display=(!cat||c.dataset.cat===cat)?'':'none'; });
+  });
+});
+</script>
+{% endblock %}

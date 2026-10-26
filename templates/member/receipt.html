@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Receipt {{ p.receipt_no }}{% endblock %}
+{% block body %}
+<div style="max-width:480px; margin:60px auto; background:var(--graphite); border:1px solid #ffffff14; padding:36px;">
+  <div style="font-family:var(--font-d); font-size:1.3rem; margin-bottom:4px;">{{ gym_name }}</div>
+  <div class="muted" style="color:#a8a89f; font-size:.8rem; margin-bottom:24px;">Payment receipt</div>
+  <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #ffffff14;"><span>Receipt #</span><b>{{ p.receipt_no }}</b></div>
+  <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #ffffff14;"><span>Date</span><b>{{ p.paid_at|fdt }}</b></div>
+  <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #ffffff14;"><span>Billed to</span><b>{{ p.user.full_name }}</b></div>
+  <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #ffffff14;"><span>Description</span><b>{{ p.description }}</b></div>
+  <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #ffffff14;"><span>Payment method</span><b>{{ p.provider|title }}{% if p.transaction_id %} · {{ p.transaction_id }}{% endif %}</b></div>
+  <div style="display:flex; justify-content:space-between; padding:16px 0; font-size:1.3rem; font-family:var(--font-d);"><span>Total</span><span style="color:var(--orange)">${{ '%.2f'|format(p.amount_cents/100) }}</span></div>
+  <button onclick="window.print()" class="btn-ghost" style="margin-top:14px; width:100%;">PRINT</button>
+</div>
+{% endblock %}

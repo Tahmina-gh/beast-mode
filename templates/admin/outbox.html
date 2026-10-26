@@ -1,0 +1,17 @@
+{% extends "dash_base.html" %}
+{% block title %}Email Log · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Email Log</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="panel">
+    <div class="dt-wrap"><table class="dt"><tr><th>To</th><th>Subject</th><th>Sent</th><th>Status</th></tr>
+      {% for e in items %}
+      <tr><td>{{ e.to_email }}</td><td>{{ e.subject }}</td><td>{{ e.created_at|fdt }}</td>
+        <td><span class="badge {{ 'ok' if e.status=='sent' else ('warn' if e.status=='not_configured' else 'bad') }}" title="{{ e.error or '' }}">{{ e.status }}</span></td></tr>
+      {% else %}<tr><td colspan="4" class="empty-state">No emails yet.</td></tr>{% endfor %}
+    </table></div>
+    {% if pg and pg.pages > 1 %}<div class="pager">{% for n in range(1, pg.pages+1) %}<a href="{{ qs(page=n) }}" class="{{ 'cur' if n==pg.page }}">{{ n }}</a>{% endfor %}</div>{% endif %}
+  </div>
+  <p class="muted" style="font-size:.8rem;">If SMTP isn't configured yet, emails show as "not_configured" — they're logged here but not actually sent. Set SMTP_HOST etc. in .env to enable real delivery.</p>
+</div>
+{% endblock %}

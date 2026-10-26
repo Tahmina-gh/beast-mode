@@ -1,0 +1,26 @@
+{% extends "dash_base.html" %}
+{% block title %}Media Library · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Media Library</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <form method="post" enctype="multipart/form-data" class="panel" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field" style="margin:0; flex:1; min-width:220px;"><label>Upload images or videos</label><input type="file" name="files" multiple accept="image/*,video/*"></div>
+    <button class="btn">UPLOAD</button>
+  </form>
+  <div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); margin-top:20px;">
+    {% for m in items %}
+    <div class="panel" style="padding:10px;">
+      {% if m.kind=='image' %}<img src="{{ media_url(m.filename) }}" style="width:100%; height:110px; object-fit:cover;">
+      {% else %}<video src="{{ media_url(m.filename) }}" style="width:100%; height:110px; object-fit:cover;" muted></video>{% endif %}
+      <div class="muted" style="font-size:.7rem; margin-top:8px; word-break:break-all;">{{ m.original_name or m.filename }}</div>
+      <form method="post" action="/admin/media/{{ m.id }}/delete" onsubmit="return confirm('Delete this file?')" style="margin-top:6px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn sm danger" style="width:100%;">Delete</button>
+      </form>
+    </div>
+    {% else %}<div class="empty-state">No media uploaded yet.</div>{% endfor %}
+  </div>
+  {% if pg.pages > 1 %}<div class="pager">{% for n in range(1, pg.pages+1) %}<a href="{{ qs(page=n) }}" class="{{ 'cur' if n==pg.page }}">{{ n }}</a>{% endfor %}</div>{% endif %}
+</div>
+{% endblock %}

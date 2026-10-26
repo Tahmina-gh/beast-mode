@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Reset password · {{ gym_name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dash.css') }}">{% endblock %}
+{% block body %}
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;">
+  <div style="width:100%; max-width:380px;">
+    <div style="text-align:center; margin-bottom:26px;">
+      <a href="/" style="font-family:var(--font-d); font-size:1.4rem; color:#fff; text-decoration:none;">BEAST<span style="color:var(--orange)">MODE</span></a>
+    </div>
+    <div class="panel">
+      {% if sent %}
+        <p>If an account exists for that email, we've sent a link to reset your password. It expires in 1 hour.</p>
+      {% else %}
+        <p style="color:#a8a89f; font-size:.88rem; margin-bottom:16px;">Enter your email and we'll send you a reset link.</p>
+        <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>Email</label><input type="email" name="email" required autofocus></div>
+          <button type="submit" class="btn" style="width:100%; justify-content:center; padding:14px;">SEND RESET LINK</button>
+        </form>
+      {% endif %}
+    </div>
+    <p style="text-align:center; margin-top:18px;"><a href="{{ url_for('auth.login') }}" style="color:#a8a89f; font-size:.86rem;">Back to log in</a></p>
+  </div>
+</div>
+{% endblock %}

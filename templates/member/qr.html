@@ -1,0 +1,13 @@
+{% extends "dash_base.html" %}
+{% block title %}Check-in QR · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Check-in</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body" style="text-align:center;">
+  <div class="panel" style="max-width:360px; margin:0 auto;">
+    <h2>Show this at the front desk</h2>
+    <div class="qrbox"><img src="{{ url_for('member.qr_png') }}" alt="Your check-in QR code" style="display:block;"></div>
+    <p class="muted" style="margin-top:16px; font-size:.85rem;">Member ID: <b style="color:#fff;">{{ m.member_code }}</b></p>
+    <p class="muted" style="font-size:.8rem;">No phone? Staff can type your member ID instead.</p>
+  </div>
+</div>
+{% endblock %}

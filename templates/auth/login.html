@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Log in · {{ gym_name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dash.css') }}">{% endblock %}
+{% block body %}
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:radial-gradient(ellipse at 50% 0%,#ff6a1a14,transparent 60%), var(--black);">
+  <div style="width:100%; max-width:380px;">
+    <div style="text-align:center; margin-bottom:26px;">
+      <a href="/" style="font-family:var(--font-d); font-size:1.4rem; color:#fff; text-decoration:none;">BEAST<span style="color:var(--orange)">MODE</span></a>
+      <p style="color:#a8a89f; margin-top:8px; font-size:.9rem;">Welcome back.</p>
+    </div>
+    <form method="post" class="panel"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="next" value="{{ request.args.get('next','') }}">
+      {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+      <div class="field"><label>Email</label><input type="email" name="email" value="{{ form.email or '' }}" required autofocus></div>
+      <div class="field"><label>Password</label><input type="password" name="password" required></div>
+      <button type="submit" class="btn" style="width:100%; justify-content:center; padding:14px;">LOG IN</button>
+      <p style="text-align:center; margin-top:14px;"><a href="{{ url_for('auth.forgot') }}" style="color:#a8a89f; font-size:.84rem;">Forgot password?</a></p>
+    </form>
+    <p style="text-align:center; margin-top:18px; color:#a8a89f; font-size:.86rem;">
+      New here? <a href="{{ url_for('auth.signup') }}" style="color:var(--orange)">Create an account</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "dash_base.html" %}
+{% block title %}Analytics · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Analytics (last 30 days)</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="panel">
+    <h2>Page views (14d)</h2>
+    <div class="mini-bars">{% set mx=(views_day|map(attribute=1)|max) or 1 %}{% for lbl,v in views_day %}<i style="height:{{ (v/mx*100)|round|int if mx else 0 }}%;" title="{{ lbl }}: {{ v }}"></i>{% endfor %}</div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h2>Funnel</h2>
+      {% for label, v in funnel %}<div class="panel-row"><span>{{ label }}</span><b>{{ v }}</b></div>{% endfor %}
+    </div>
+    <div class="panel">
+      <h2>Conversion rates</h2>
+      {% for label, v in rates %}<div class="panel-row"><span>{{ label }}</span><b style="color:var(--orange)">{{ v }}</b></div>{% endfor %}
+    </div>
+  </div>
+  <p class="muted" style="font-size:.8rem;">Tracking is privacy-friendly: event names and page paths only — no IP addresses, device data or personal identifiers are stored.</p>
+</div>
+{% endblock %}

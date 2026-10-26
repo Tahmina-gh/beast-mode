@@ -1,0 +1,32 @@
+{% extends "dash_base.html" %}
+{% block title %}Website Content · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Website Content</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="panel" style="max-width:720px;">
+    <form method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-grid">
+        {% for key, label, typ in fields %}
+        <div class="field">
+          <label>{{ label }}</label>
+          {% if typ == 'textarea' %}
+            <textarea name="{{ key }}">{{ cur.get(key,'') }}</textarea>
+          {% elif typ in ('image','video') %}
+            {% if cur.get(key) %}
+              {% if typ=='image' %}<img src="{{ media_url(cur[key]) }}" style="max-width:200px; display:block; margin-bottom:8px;">
+              {% else %}<video src="{{ media_url(cur[key]) }}" style="max-width:260px; display:block; margin-bottom:8px;" controls muted></video>{% endif %}
+              <label style="font-weight:400; display:flex; gap:8px; align-items:center;"><input type="checkbox" name="{{ key }}__clear"> remove current file</label>
+            {% endif %}
+            <input type="file" name="{{ key }}" accept="{{ 'image/*' if typ=='image' else 'video/*' }}">
+          {% else %}
+            <input type="text" name="{{ key }}" value="{{ cur.get(key,'') }}">
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <button class="btn">SAVE — PUBLISH TO SITE</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

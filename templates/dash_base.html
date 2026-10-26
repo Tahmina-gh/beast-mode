@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dash.css') }}">{% block dash_css %}{% endblock %}{% endblock %}
+{% block body %}
+{% set u = cu() %}
+{% set role = u.role_name if u else 'member' %}
+{% set member_nav = [('home','Home','/member','⌂'),('classes','Classes','/member/classes','◷'),('bookings','Bookings','/member/bookings','✓'),
+                      ('membership','Membership','/member/membership','★'),('trainers','Trainers','/member/trainers','☺'),
+                      ('payments','Payments','/member/payments','$'),('progress','Progress','/member/progress','▲'),
+                      ('qr','Check-in QR','/member/qr','▣'),('profile','Profile','/account/','☺')] %}
+{% set trainer_nav = [('home','Today','/trainer','⌂'),('schedule','Schedule','/trainer/schedule','◷'),('members','Members','/trainer/members','☺'),
+                       ('availability','Availability','/trainer/availability','✎'),('checkin','Check-in','/staff/checkin','✓'),
+                       ('profile','Profile','/account/','☺')] %}
+{% set admin_nav = [('dashboard','Dashboard','/admin','▦'),('members','Members','/admin/members','☺'),('bookings','Bookings','/admin/bookings','✓'),
+                     ('payments','Payments','/admin/payments','$'),('attendance','Attendance','/admin/attendance','◷'),
+                     ('messages','Messages','/admin/messages','✉'),('analytics','Analytics','/admin/analytics','▲')] %}
+{% set admin_more = [('trainers','Trainers','/admin/trainers'),('plans','Membership plans','/admin/crud/plans'),('classes','Classes','/admin/crud/classes'),
+                      ('testimonials','Testimonials','/admin/crud/testimonials'),('facilities','Facilities','/admin/crud/facilities'),
+                      ('faqs','FAQs','/admin/crud/faqs'),('quiz','Goal quiz rules','/admin/crud/quiz'),('content','Website content','/admin/content'),
+                      ('media','Media library','/admin/media'),('outbox','Email log','/admin/outbox'),('staff','Staff check-in','/staff/checkin')] %}
+{% set items = admin_nav if role=='admin' else (trainer_nav if role=='trainer' else member_nav) %}
+<div class="dash">
+  <aside class="sidebar">
+    <div class="brand"><a href="/" style="color:#fff; text-decoration:none;">BEAST<span>MODE</span></a></div>
+    {% for key,label,href,ic in items %}
+    <a href="{{ href }}" class="{{ 'active' if request.path==href or (href!='/' and href!='/member' and href!='/trainer' and request.path.startswith(href)) or (href=='/member' and request.path=='/member') or (href=='/trainer' and request.path=='/trainer') else '' }}"><span class="ic">{{ ic }}</span>{{ label }}</a>
+    {% endfor %}
+    {% if role=='admin' %}
+    <div class="sect">More</div>
+    {% for key,label,href in admin_more %}
+    <a href="{{ href }}" class="{{ 'active' if request.path.startswith(href.split('?')[0]) else '' }}"><span class="ic">·</span>{{ label }}</a>
+    {% endfor %}
+    {% endif %}
+    <div class="sect">&nbsp;</div>
+    <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><a href="#" onclick="this.closest('form').querySelector('button').click();return false;" style="display:flex;"><span class="ic">⏻</span>Log out</a><button type="submit" style="display:none;"></button></form>
+  </aside>
+  <div class="dash-main">
+    <div class="dash-top">
+      {% block dash_top %}
+      <h1>{{ role.title() }} Dashboard</h1>
+      {% endblock %}
+      <div class="topbar-actions">
+        <a href="{{ url_for('account.notifications') }}" class="bell">🔔{% if unread %}<span class="dot"></span>{% endif %}</a>
+        {% if u.photo %}<a href="/account/"><img src="{{ media_url(u.photo) }}" style="width:34px; height:34px; border-radius:50%; object-fit:cover;"></a>
+        {% else %}<a href="/account/" class="avatar">{{ u.full_name|initials }}</a>{% endif %}
+      </div>
+    </div>
+    {% block dash_content %}{% endblock %}
+  </div>
+</div>
+<nav class="mobile-tabs">
+  {% for key,label,href,ic in items[:4] %}
+  <a href="{{ href }}" class="{{ 'active' if request.path==href or (href not in ('/member','/trainer','/admin') and request.path.startswith(href)) else '' }}"><span class="ic">{{ ic }}</span>{{ label }}</a>
+  {% endfor %}
+  <button type="button" class="more-btn" data-sheet="moreSheet" aria-label="More pages"><span class="ic">☰</span>More</button>
+</nav>
+<div class="sheet" id="moreSheet">
+  <div class="sheet-inner">
+    <div class="grab"></div>
+    {% for key,label,href,ic in items[4:] %}<a href="{{ href }}"><span class="ic">{{ ic }}</span>{{ label }}</a>{% endfor %}
+    {% if role=='admin' %}
+    <div class="sect">Manage</div>
+    {% for key,label,href in admin_more %}<a href="{{ href }}"><span class="ic">›</span>{{ label }}</a>{% endfor %}
+    {% endif %}
+    <a href="{{ url_for('account.notifications') }}"><span class="ic">🔔</span>Notifications{% if unread %} ({{ unread }}){% endif %}</a>
+    {% if role=='admin' %}<a href="/account/"><span class="ic">☺</span>My profile</a>{% endif %}
+    {% if role=='member' %}<a href="/#contact" ><span class="ic">✉</span>Contact the gym</a>{% endif %}
+    <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn danger logout" type="submit">LOG OUT</button></form>
+  </div>
+</div>
+{% endblock %}

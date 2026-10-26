@@ -1,0 +1,35 @@
+{% extends "dash_base.html" %}
+{% block title %}Availability · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Availability</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="panel">
+    <h2>Session length</h2>
+    <form method="post" style="display:flex; gap:10px; align-items:flex-end;">
+      <input type="hidden" name="action" value="settings">
+      <div class="field" style="margin:0;"><label>Minutes per session</label><input type="number" name="session_minutes" value="{{ t.session_minutes }}" min="15" max="180"></div>
+      <button class="btn">SAVE</button>
+    </form>
+  </div>
+  <div class="panel">
+    <h2>Weekly hours</h2>
+    <div class="dt-wrap"><table class="dt"><tr><th>Day</th><th>Start</th><th>End</th><th></th></tr>
+      {% for r in rows %}
+      <tr>
+        <td>{{ days[r.weekday] }}</td><td>{{ r.start_time.strftime('%H:%M') }}</td><td>{{ r.end_time.strftime('%H:%M') }}</td>
+        <td><form method="post" style="display:inline;"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ r.id }}"><button class="btn sm danger">Remove</button></form></td>
+      </tr>
+      {% else %}<tr><td colspan="4" class="empty-state">No availability set — add your working hours below.</td></tr>{% endfor %}
+    </table></div>
+    <form method="post" style="display:flex; gap:10px; align-items:flex-end; margin-top:18px; flex-wrap:wrap;">
+      <input type="hidden" name="action" value="add">
+      <div class="field" style="margin:0;"><label>Day</label>
+        <select name="weekday">{% for i, d in enumerate(days) %}<option value="{{ i }}">{{ d }}</option>{% endfor %}</select>
+      </div>
+      <div class="field" style="margin:0;"><label>Start</label><input type="time" name="start" value="09:00"></div>
+      <div class="field" style="margin:0;"><label>End</label><input type="time" name="end" value="17:00"></div>
+      <button class="btn">ADD</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

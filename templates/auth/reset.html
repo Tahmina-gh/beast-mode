@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Choose a new password · {{ gym_name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dash.css') }}">{% endblock %}
+{% block body %}
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;">
+  <div style="width:100%; max-width:380px;">
+    <div style="text-align:center; margin-bottom:26px;">
+      <a href="/" style="font-family:var(--font-d); font-size:1.4rem; color:#fff; text-decoration:none;">BEAST<span style="color:var(--orange)">MODE</span></a>
+    </div>
+    <form method="post" class="panel"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label>New password</label>
+        <input type="password" name="password" required>
+        {% if errors.password %}<div class="err">{{ errors.password }}</div>{% endif %}
+      </div>
+      <div class="field">
+        <label>Confirm new password</label>
+        <input type="password" name="password2" required>
+        {% if errors.password2 %}<div class="err">{{ errors.password2 }}</div>{% endif %}
+      </div>
+      <button type="submit" class="btn" style="width:100%; justify-content:center; padding:14px;">SET PASSWORD</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

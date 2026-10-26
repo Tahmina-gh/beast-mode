@@ -1,0 +1,40 @@
+{% extends "dash_base.html" %}
+{% block title %}My Bookings · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>My Bookings</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="panel">
+    <h2>Classes</h2>
+    <div class="dt-wrap"><table class="dt"><tr><th>Class</th><th>When</th><th>Status</th><th></th></tr>
+      {% for b in cls %}
+      <tr>
+        <td>{{ b.gym_class.name }}</td><td>{{ b.gym_class.starts_at|fdt }}</td>
+        <td><span class="badge {{ 'ok' if b.status in ('booked','attended') else ('warn' if b.status in ('offered','waitlist') else 'bad') }}">{{ b.status }}</span></td>
+        <td class="inline-actions">
+          {% if b.status=='offered' %}<button class="btn sm" data-action="/api/bookings/{{ b.id }}/claim">Claim</button>{% endif %}
+          {% if b.status in ('booked','offered','waitlist') and b.gym_class.starts_at > now %}
+          <button class="btn sm danger" data-action="/api/bookings/{{ b.id }}/cancel" data-confirm="Cancel this booking?">Cancel</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="4" class="empty-state">No class bookings yet.</td></tr>{% endfor %}
+    </table></div>
+  </div>
+  <div class="panel">
+    <h2>Trainer sessions</h2>
+    <div class="dt-wrap"><table class="dt"><tr><th>Service</th><th>Trainer</th><th>When</th><th>Status</th><th></th></tr>
+      {% for s in ses %}
+      <tr>
+        <td>{{ s.service }}</td><td>{{ s.trainer.name }}</td><td>{{ s.starts_at|fdt }}</td>
+        <td><span class="badge {{ 'ok' if s.status=='confirmed' else ('warn' if s.status=='pending_payment' else ('bad' if s.status=='cancelled' else 'muted')) }}">{{ 'awaiting payment' if s.status=='pending_payment' else s.status }}</span></td>
+        <td class="inline-actions">
+          {% if s.status in ('confirmed','pending_payment') and s.starts_at > now %}
+          <button class="btn sm danger" data-action="/api/sessions/{{ s.id }}/cancel" data-confirm="Cancel this session?">Cancel</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="5" class="empty-state">No sessions yet.</td></tr>{% endfor %}
+    </table></div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% set u = cu() %}
+{% extends "dash_base.html" %}
+{% block title %}My profile · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>My Profile</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="grid2">
+    <div class="panel">
+      <h2>Profile</h2>
+      {% if not u.email_verified %}
+      <div class="flash info" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <span>Your email isn't verified yet.</span>
+        <form method="post" action="{{ url_for('auth.resend_verification') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn sm outline" type="submit">Resend</button></form>
+      </div>
+      {% endif %}
+      <form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="profile">
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
+          {% if u.photo %}<img src="{{ media_url(u.photo) }}" style="width:64px; height:64px; border-radius:50%; object-fit:cover;">
+          {% else %}<div class="avatar" style="width:64px; height:64px; font-size:1.3rem;">{{ u.full_name|initials }}</div>{% endif %}
+          <div class="field" style="margin:0; flex:1;"><label>Update photo</label><input type="file" name="photo" accept="image/*"></div>
+        </div>
+        <div class="form-grid two">
+          <div class="field"><label>Full name</label><input type="text" name="full_name" value="{{ u.full_name }}" class="{{ 'err-field' if errors.full_name }}">
+            {% if errors.full_name %}<div class="err">{{ errors.full_name }}</div>{% endif %}</div>
+          <div class="field"><label>Phone</label><input type="tel" name="phone" value="{{ u.phone or '' }}" class="{{ 'err-field' if errors.phone }}">
+            {% if errors.phone %}<div class="err">{{ errors.phone }}</div>{% endif %}</div>
+        </div>
+        <div class="field"><label>Email</label><input type="email" value="{{ u.email }}" disabled style="opacity:.6"></div>
+        {% if u.member %}
+        <div class="form-grid two">
+          <div class="field"><label>Date of birth</label><input type="date" name="dob" value="{{ u.member.dob or '' }}"></div>
+          <div class="field"><label>Emergency contact</label><input type="text" name="emergency_contact" value="{{ u.member.emergency_contact or '' }}"></div>
+        </div>
+        {% endif %}
+        <button type="submit" class="btn">SAVE CHANGES</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>Change password</h2>
+      <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="password">
+        <div class="field"><label>Current password</label><input type="password" name="current_password" class="{{ 'err-field' if errors.current_password }}">
+          {% if errors.current_password %}<div class="err">{{ errors.current_password }}</div>{% endif %}</div>
+        <div class="field"><label>New password</label><input type="password" name="new_password" class="{{ 'err-field' if errors.new_password }}">
+          {% if errors.new_password %}<div class="err">{{ errors.new_password }}</div>{% endif %}</div>
+        <div class="field"><label>Confirm new password</label><input type="password" name="new_password2" class="{{ 'err-field' if errors.new_password2 }}">
+          {% if errors.new_password2 %}<div class="err">{{ errors.new_password2 }}</div>{% endif %}</div>
+        <button type="submit" class="btn outline">CHANGE PASSWORD</button>
+      </form>
+      <h2 style="margin-top:30px;">Account</h2>
+      <div class="panel-row"><span class="muted">Role</span><span>{{ u.role_name.title() }}</span></div>
+      <div class="panel-row"><span class="muted">Member since</span><span>{{ u.created_at|fdate }}</span></div>
+      <form method="post" action="{{ url_for('auth.logout') }}" style="margin-top:16px;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn danger" type="submit">LOG OUT</button></form>
+    </div>
+  </div>
+</div>
+{% endblock %}

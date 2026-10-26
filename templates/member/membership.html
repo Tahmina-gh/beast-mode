@@ -1,0 +1,87 @@
+{% extends "dash_base.html" %}
+{% block title %}Membership · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Membership</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  {% if mem %}
+  <div class="panel">
+    <h2>Current plan: {{ mem.plan.name }}</h2>
+    <div class="panel-row"><span class="muted">Status</span><span class="badge ok">{{ mem.status }}{% if mem.cancel_at_period_end %} · won't renew{% endif %}</span></div>
+    <div class="panel-row"><span class="muted">Started</span><span>{{ mem.start_date|fdate }}</span></div>
+    <div class="panel-row"><span class="muted">{{ 'Ends' if mem.cancel_at_period_end else 'Renews' }}</span><span>{{ mem.end_date|fdate }} {% if info.expiring %}<span style="color:var(--volt)">· {{ info.days_left }} days left</span>{% endif %}</span></div>
+    {% if not mem.cancel_at_period_end %}
+    <button class="btn danger sm" style="margin-top:14px;" data-action="/api/memberships/{{ mem.id }}/cancel" data-confirm="Your membership will not renew. You'll keep access until {{ mem.end_date|fdate }}. Continue?">CANCEL AUTO-RENEW</button>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% if upcoming_mem %}
+  <div class="flash info">Your {{ upcoming_mem.plan.name }} plan starts {{ upcoming_mem.start_date|fdate }}.</div>
+  {% endif %}
+
+  <div class="tier-grid" style="margin-top:10px;">
+    {% for p in plans %}
+    <div class="tier {{ 'feat' if p.featured }}">
+      <div class="kicker">{{ 'MOST POPULAR' if p.featured else p.name.upper() }}</div>
+      <h3>{{ p.name }}</h3>
+      <div class="price">${{ '%.0f'|format(p.price_monthly_cents/100) }}<span>/mo</span></div>
+      <p class="muted" style="font-size:.84rem; margin:8px 0;">or ${{ '%.0f'|format(p.price_yearly_cents/100) }}/year</p>
+      <ul>{% for b in p.benefit_list %}<li>{{ b }}</li>{% endfor %}</ul>
+      {% if mem and mem.plan_id==p.id and not mem.cancel_at_period_end %}
+        <button class="btn-ghost" disabled>CURRENT PLAN</button>
+      {% else %}
+        <button class="{{ 'btn-primary' if p.featured else 'btn-ghost' }} buy-btn" data-id="{{ p.id }}" data-name="{{ p.name }}">
+          {{ 'UPGRADE' if mem and p.price_monthly_cents > mem.plan.price_monthly_cents else ('DOWNGRADE' if mem else 'CHOOSE') }} {{ p.name.upper() }}
+        </button>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="panel" style="margin-top:28px;">
+    <h2>History</h2>
+    <div class="dt-wrap"><table class="dt"><tr><th>Plan</th><th>Kind</th><th>Status</th><th>Start</th><th>End</th></tr>
+      {% for h in history %}
+      <tr><td>{{ h.plan.name }}</td><td>{{ h.kind }}</td><td><span class="badge {{ 'ok' if h.status=='active' else 'muted' }}">{{ h.status }}</span></td><td>{{ h.start_date|fdate }}</td><td>{{ h.end_date|fdate }}</td></tr>
+      {% else %}<tr><td colspan="5" class="empty-state">No history yet.</td></tr>{% endfor %}
+    </table></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="billModal" style="position:fixed; inset:0; z-index:300; background:#000000b3; display:none; align-items:center; justify-content:center; padding:20px;">
+  <div class="panel" style="max-width:380px; width:100%;">
+    <h2 id="billTitle">Choose billing</h2>
+    <button class="btn outline" id="billMonthly" style="width:100%; margin-bottom:10px;">Monthly</button>
+    <button class="btn outline" id="billYearly" style="width:100%;">Yearly (save ~17%)</button>
+    <div class="modal-msg" id="billMsg" style="margin-top:12px;"></div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+let pickedPlan=null;
+document.querySelectorAll('.buy-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    pickedPlan=b.dataset.id;
+    document.getElementById('billTitle').textContent='Billing for '+b.dataset.name;
+    document.getElementById('billMsg').textContent='';
+    document.getElementById('billModal').style.display='flex';
+  });
+});
+document.getElementById('billModal').addEventListener('click', e=>{ if(e.target.id==='billModal') e.target.style.display='none'; });
+async function buy(billing){
+  const msg=document.getElementById('billMsg');
+  msg.textContent='Processing…'; msg.style.color='#a8a89f';
+  const data=await api('/api/memberships', {plan_id:pickedPlan, billing});
+  if(!data.ok){ msg.textContent=data.error; msg.style.color='var(--red)'; return; }
+  const pay=await api(`/api/payments/${data.payment_id}/checkout`, {});
+  if(pay.url){ location.href=pay.url; }
+  else if(pay.manual){ msg.textContent=pay.message; msg.style.color='var(--volt)'; setTimeout(()=>location.href='/member/payments', 2500); }
+  else{ msg.textContent=pay.error||'Could not start payment.'; msg.style.color='var(--red)'; }
+}
+document.getElementById('billMonthly').onclick=()=>buy('monthly');
+document.getElementById('billYearly').onclick=()=>buy('yearly');
+{% if preselect %}
+window.addEventListener('DOMContentLoaded', ()=>{ const b=document.querySelector(`.buy-btn[data-id="{{ preselect }}"]`); if(b) b.click(); });
+{% endif %}
+</script>
+{% endblock %}

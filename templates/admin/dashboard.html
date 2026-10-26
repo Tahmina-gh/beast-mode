@@ -1,0 +1,40 @@
+{% extends "dash_base.html" %}
+{% block title %}Admin Dashboard · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Dashboard</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  {% if expiring %}<div class="flash info">{{ expiring }} membership{{ 's' if expiring != 1 }} expiring in the next 7 days.</div>{% endif %}
+  <div class="cards">
+    {% for label, value, href in kpis %}
+    <a href="{{ href }}" class="kpi"><div class="v">{{ value }}</div><div class="l">{{ label }}</div></a>
+    {% endfor %}
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>Revenue (last 6 months)</h2>
+      <div class="mini-bars">{% set mx=(charts.revenue|map(attribute=1)|max) or 1 %}{% for lbl,v in charts.revenue %}<i style="height:{{ (v/mx*100)|round|int if mx else 0 }}%;" title="{{ lbl }}: ${{ v }}"></i>{% endfor %}</div>
+      <div class="lbl">{% for lbl,v in charts.revenue %}<span>{{ lbl }}</span>{% endfor %}</div>
+    </div>
+    <div class="panel">
+      <h2>Membership growth</h2>
+      <div class="mini-bars">{% set mx=(charts.growth|map(attribute=1)|max) or 1 %}{% for lbl,v in charts.growth %}<i style="height:{{ (v/mx*100)|round|int if mx else 0 }}%;" title="{{ lbl }}: {{ v }}"></i>{% endfor %}</div>
+      <div class="lbl">{% for lbl,v in charts.growth %}<span>{{ lbl }}</span>{% endfor %}</div>
+    </div>
+  </div>
+  <div class="grid3">
+    <div class="panel">
+      <h2>Attendance (14d)</h2>
+      <div class="mini-bars">{% set mx=(charts.attendance|map(attribute=1)|max) or 1 %}{% for lbl,v in charts.attendance %}<i style="height:{{ (v/mx*100)|round|int if mx else 0 }}%;"></i>{% endfor %}</div>
+    </div>
+    <div class="panel">
+      <h2>Bookings (14d)</h2>
+      <div class="mini-bars">{% set mx=(charts.bookings|map(attribute=1)|max) or 1 %}{% for lbl,v in charts.bookings %}<i style="height:{{ (v/mx*100)|round|int if mx else 0 }}%;"></i>{% endfor %}</div>
+    </div>
+    <div class="panel">
+      <h2>New leads (14d)</h2>
+      <div class="mini-bars">{% set mx=(charts.leads|map(attribute=1)|max) or 1 %}{% for lbl,v in charts.leads %}<i style="height:{{ (v/mx*100)|round|int if mx else 0 }}%;"></i>{% endfor %}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

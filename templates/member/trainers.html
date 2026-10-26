@@ -1,0 +1,86 @@
+{% extends "dash_base.html" %}
+{% block title %}Book a Trainer · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Book a Trainer</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  {% if not mem %}<div class="flash info">You need an active membership to book sessions. <a href="/member/membership" style="color:var(--volt)">View plans →</a></div>{% endif %}
+  {% if mem and mem.plan.pt_sessions %}<div class="flash ok">You have {{ left }} included session{{ 's' if left!=1 }} left this month with your {{ mem.plan.name }} plan.</div>{% endif %}
+  <div class="grid3">
+    {% for t in trainers %}
+    <div class="panel trainer-pick" data-id="{{ t.id }}" style="cursor:pointer; {{ 'border-color:var(--orange)' if selected==t.id }}">
+      <div style="display:flex; gap:14px; align-items:center;">
+        <img src="{{ media_url(t.photo) }}" style="width:56px; height:56px; border-radius:50%; object-fit:cover;">
+        <div><div style="font-weight:700;">{{ t.name }}</div><div class="muted" style="font-size:.8rem;">{{ t.specialization }}</div></div>
+      </div>
+      <p class="muted" style="font-size:.84rem; margin-top:12px;">{{ t.bio }}</p>
+      <div style="margin-top:12px; font-size:.85rem;">{{ t.session_minutes }} min · ${{ '%.0f'|format(t.session_price_cents/100) }}/session (or included with your plan)</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="panel" id="bookPanel" style="display:none; margin-top:22px;">
+    <h2 id="bookTrainerName">Choose a time</h2>
+    <div class="form-grid two">
+      <div class="field"><label>Service</label>
+        <select id="svc"><option>Personal Training</option><option>Fitness Assessment</option><option>Mobility Session</option></select>
+      </div>
+      <div class="field"><label>Date</label><input type="date" id="slotDate"></div>
+    </div>
+    <div id="slots" style="display:flex; flex-wrap:wrap; gap:8px; margin:14px 0;"></div>
+    <button class="btn" id="confirmBtn" disabled>CONFIRM BOOKING</button>
+    <div class="modal-msg" id="bookMsg" style="margin-top:10px; font-size:.85rem;"></div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+let curTrainer={{ selected or 'null' }}, curSlot=null;
+const dateInput=document.getElementById('slotDate');
+dateInput.min=new Date().toISOString().slice(0,10);
+dateInput.value=new Date().toISOString().slice(0,10);
+
+function pick(id, name){
+  curTrainer=id; curSlot=null;
+  document.querySelectorAll('.trainer-pick').forEach(p=>p.style.borderColor = p.dataset.id==id ? 'var(--orange)' : '#ffffff14');
+  document.getElementById('bookPanel').style.display='block';
+  document.getElementById('bookTrainerName').textContent='Book '+name;
+  document.getElementById('confirmBtn').disabled=true;
+  loadSlots();
+  document.getElementById('bookPanel').scrollIntoView({behavior:'smooth'});
+}
+document.querySelectorAll('.trainer-pick').forEach(p=>{
+  p.addEventListener('click', ()=> pick(p.dataset.id, p.querySelector('div > div').textContent));
+});
+{% if selected %}
+window.addEventListener('DOMContentLoaded', ()=>{
+  const el=document.querySelector('.trainer-pick[data-id="{{ selected }}"]');
+  if(el) pick({{ selected }}, el.querySelector('div > div').textContent);
+});
+{% endif %}
+
+async function loadSlots(){
+  const box=document.getElementById('slots');
+  box.innerHTML='Loading…';
+  const r=await fetch(`/api/trainers/${curTrainer}/slots?date=${dateInput.value}`);
+  const data=await r.json();
+  if(!data.ok){ box.innerHTML=`<span style="color:var(--red)">${data.error}</span>`; return; }
+  if(!data.slots.length){ box.innerHTML='<span class="muted">No slots available that day.</span>'; return; }
+  box.innerHTML='';
+  data.slots.forEach(s=>{
+    const b=document.createElement('button');
+    b.className='btn sm outline'; b.textContent=s.label; b.type='button';
+    b.onclick=()=>{ curSlot=s.start; document.querySelectorAll('#slots button').forEach(x=>x.classList.remove('btn')); document.querySelectorAll('#slots button').forEach(x=>x.classList.add('outline'));
+      b.classList.remove('outline'); b.classList.add('btn'); document.getElementById('confirmBtn').disabled=false; };
+    box.appendChild(b);
+  });
+}
+dateInput.addEventListener('change', loadSlots);
+
+document.getElementById('confirmBtn').addEventListener('click', async ()=>{
+  const msg=document.getElementById('bookMsg');
+  const data=await api('/api/sessions', {trainer_id:curTrainer, start:curSlot, service:document.getElementById('svc').value});
+  if(data.ok){ msg.textContent=data.message||'Booked!'; msg.style.color='var(--volt)'; setTimeout(()=>location.href='/member/bookings', 1200); }
+  else{ msg.textContent=data.error; msg.style.color='var(--red)'; }
+});
+</script>
+{% endblock %}

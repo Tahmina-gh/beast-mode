@@ -1,0 +1,38 @@
+{% extends "dash_base.html" %}
+{% block title %}{{ cfg.title }} · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>{{ 'Edit' if obj else 'Add' }} {{ cfg.singular }}</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="panel" style="max-width:720px;">
+    <form method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-grid two">
+        {% for name, label, typ, req, opts in fields %}
+        <div class="field" {% if typ in ('textarea','image') %}style="grid-column:1/-1;"{% endif %}>
+          <label>{{ label }}{% if req %} *{% endif %}</label>
+          {% if typ == 'textarea' %}
+            <textarea name="{{ name }}" {{ 'required' if req }}>{{ vals[name] }}</textarea>
+          {% elif typ == 'bool' %}
+            <div class="checkrow" style="margin:6px 0 0;"><input type="checkbox" name="{{ name }}" id="f_{{ name }}" {{ 'checked' if vals[name] }}><label for="f_{{ name }}" style="margin:0; font-weight:400;">Yes</label></div>
+          {% elif typ == 'select' %}
+            <select name="{{ name }}" {{ 'required' if req }}>
+              {% for v, l in opts %}<option value="{{ v }}" {{ 'selected' if (vals[name]|string)==(v|string) }}>{{ l }}</option>{% endfor %}
+            </select>
+          {% elif typ == 'datetime' %}
+            <input type="datetime-local" name="{{ name }}" value="{{ vals[name] }}" {{ 'required' if req }}>
+          {% elif typ == 'image' %}
+            {% if vals[name] %}<img src="{{ media_url(vals[name]) }}" style="max-width:160px; display:block; margin-bottom:8px;">{% endif %}
+            <input type="file" name="{{ name }}" accept="image/*">
+          {% else %}
+            <input type="text" name="{{ name }}" value="{{ vals[name] }}" {{ 'required' if req }}>
+          {% endif %}
+          {% if errors[name] %}<div class="err">{{ errors[name] }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn" style="margin-top:10px;">SAVE</button>
+      <a href="/admin/crud/{{ key }}" class="btn outline" style="margin-top:10px;">CANCEL</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

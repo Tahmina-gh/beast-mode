@@ -1,0 +1,79 @@
+{% extends "dash_base.html" %}
+{% block title %}Progress · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Fitness Progress</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="cards">
+    <div class="kpi"><div class="v streak-flame">🔥 {{ streak }}</div><div class="l">Week Streak</div></div>
+    <div class="kpi"><div class="v">{{ visits }}</div><div class="l">Total Visits</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Attendance — last 12 weeks</h2>
+    <div class="mini-bars">
+      {% set mx = (weekly|map(attribute=1)|max) or 1 %}
+      {% for lbl, v in weekly %}<i style="height:{{ (v/mx*100)|round|int if mx else 0 }}%;" title="{{ lbl }}: {{ v }}"></i>{% endfor %}
+    </div>
+    <div class="lbl">{% for lbl, v in weekly %}<span>{{ lbl }}</span>{% endfor %}</div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>Log a measurement</h2>
+      <form id="progForm">
+        <div class="field"><label>Type</label>
+          <select id="pMetric"><option value="weight">Weight (kg)</option><option value="body_fat">Body fat %</option><option value="chest">Chest (cm)</option><option value="waist">Waist (cm)</option><option value="hips">Hips (cm)</option><option value="arm">Arm (cm)</option><option value="thigh">Thigh (cm)</option><option value="pr">Personal record (lift)</option></select>
+        </div>
+        <div class="field" id="liftField" style="display:none;"><label>Exercise</label><input type="text" id="pLift" placeholder="e.g. bench press"></div>
+        <div class="field"><label>Value</label><input type="number" step="0.1" id="pValue" required></div>
+        <div class="field"><label>Date</label><input type="date" id="pDate" value="{{ now().strftime('%Y-%m-%d') }}"></div>
+        <div class="field"><label>Note (optional)</label><input type="text" id="pNote"></div>
+        <button type="submit" class="btn">SAVE ENTRY</button>
+      </form>
+    </div>
+    <div class="panel">
+      <h2>Goals</h2>
+      {% for g in goals %}
+      <div class="panel-row">
+        <span>{{ g.goal }}{% if g.target_date %} <span class="muted">· by {{ g.target_date|fdate }}</span>{% endif %}</span>
+        <span class="badge {{ 'ok' if g.status=='achieved' else ('muted' if g.status=='dropped' else 'warn') }}">{{ g.status }}</span>
+      </div>
+      {% else %}<div class="empty-state">No goals yet.</div>{% endfor %}
+      <form id="goalForm" style="margin-top:16px; display:flex; gap:8px;">
+        <input type="text" id="gText" placeholder="New goal…" style="flex:1; background:#000; border:1px solid #ffffff2c; color:#fff; padding:10px 12px;">
+        <button class="btn sm">ADD</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Recent entries</h2>
+    <div class="dt-wrap"><table class="dt"><tr><th>Date</th><th>Metric</th><th>Value</th><th>Note</th><th></th></tr>
+      {% for e in entries %}
+      <tr><td>{{ e.recorded_on|fdate }}</td><td>{{ e.metric.replace('pr:','PR: ')|title }}</td><td>{{ e.value }}{{ e.unit }}</td><td class="muted">{{ e.note or '' }}</td>
+        <td><button class="btn sm danger" data-action="/api/progress/{{ e.id }}/delete" data-confirm="Delete this entry?">Delete</button></td></tr>
+      {% else %}<tr><td colspan="5" class="empty-state">No entries yet — log your first measurement above.</td></tr>{% endfor %}
+    </table></div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById('pMetric').addEventListener('change', e=>{
+  document.getElementById('liftField').style.display = e.target.value==='pr' ? 'block' : 'none';
+});
+document.getElementById('progForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const data=await api('/api/progress', {metric:pMetric.value, lift:pLift.value, value:pValue.value, recorded_on:pDate.value, note:pNote.value});
+  toast(data.ok?'Saved.':data.error, data.ok?'ok':'error');
+  if(data.ok) setTimeout(()=>location.reload(), 600);
+});
+document.getElementById('goalForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  if(!gText.value.trim()) return;
+  const data=await api('/api/goals', {goal:gText.value});
+  toast(data.ok?'Added.':data.error, data.ok?'ok':'error');
+  if(data.ok) setTimeout(()=>location.reload(), 500);
+});
+</script>
+{% endblock %}

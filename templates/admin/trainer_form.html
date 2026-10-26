@@ -1,0 +1,48 @@
+{% extends "dash_base.html" %}
+{% block title %}{{ 'Edit trainer' if t else 'Add trainer' }} · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>{{ 'Edit' if t else 'Add' }} Trainer</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="panel" style="max-width:720px;">
+    <form method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
+        {% if t and t.photo %}<img src="{{ media_url(t.photo) }}" style="width:64px; height:64px; border-radius:50%; object-fit:cover;">{% endif %}
+        <div class="field" style="margin:0; flex:1;"><label>Photo</label><input type="file" name="photo" accept="image/*"></div>
+      </div>
+      <div class="form-grid two">
+        <div class="field"><label>Full name</label><input type="text" name="full_name" value="{{ t.name if t else form.get('full_name','') }}">{% if errors.full_name %}<div class="err">{{ errors.full_name }}</div>{% endif %}</div>
+        <div class="field"><label>Email</label><input type="email" name="email" value="{{ t.user.email if t else form.get('email','') }}">{% if errors.email %}<div class="err">{{ errors.email }}</div>{% endif %}</div>
+        <div class="field"><label>Phone</label><input type="tel" name="phone" value="{{ t.user.phone if t else form.get('phone','') }}"></div>
+        <div class="field"><label>Specialization</label><input type="text" name="specialization" value="{{ t.specialization if t else form.get('specialization','') }}">{% if errors.specialization %}<div class="err">{{ errors.specialization }}</div>{% endif %}</div>
+        <div class="field"><label>Experience (years)</label><input type="number" name="experience_years" value="{{ t.experience_years if t else form.get('experience_years','1') }}"></div>
+        <div class="field"><label>Session length (min)</label><input type="number" name="session_minutes" value="{{ t.session_minutes if t else form.get('session_minutes','60') }}"></div>
+        <div class="field"><label>Session price ($)</label><input type="number" step="0.01" name="session_price" value="{{ (t.session_price_cents/100) if t else form.get('session_price','60') }}"></div>
+        <div class="field"><label>Certifications</label><input type="text" name="certifications" value="{{ t.certifications if t else form.get('certifications','') }}"></div>
+      </div>
+      <div class="field"><label>Bio</label><textarea name="bio">{{ t.bio if t else form.get('bio','') }}</textarea></div>
+      <div class="checkrow"><input type="checkbox" name="active" id="active" {{ 'checked' if (t.active if t else True) }}><label for="active" style="margin:0; font-weight:400;">Active (bookable)</label></div>
+      <button class="btn">SAVE</button>
+    </form>
+  </div>
+
+  {% if t %}
+  <div class="panel" style="max-width:720px; margin-top:22px;">
+    <h2>Weekly availability</h2>
+    <div class="dt-wrap"><table class="dt"><tr><th>Day</th><th>Start</th><th>End</th><th></th></tr>
+      {% for a in t.availability|sort(attribute='weekday') %}
+      <tr><td>{{ days[a.weekday] }}</td><td>{{ a.start_time.strftime('%H:%M') }}</td><td>{{ a.end_time.strftime('%H:%M') }}</td>
+        <td><form method="post" action="/admin/trainers/{{ t.id }}/availability" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="delete" value="{{ a.id }}"><button class="btn sm danger">Remove</button></form></td></tr>
+      {% else %}<tr><td colspan="4" class="empty-state">No availability set.</td></tr>{% endfor %}
+    </table></div>
+    <form method="post" action="/admin/trainers/{{ t.id }}/availability" style="display:flex; gap:10px; align-items:flex-end; margin-top:16px; flex-wrap:wrap;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field" style="margin:0;"><label>Day</label><select name="weekday">{% for i, d in enumerate(days) %}<option value="{{ i }}">{{ d }}</option>{% endfor %}</select></div>
+      <div class="field" style="margin:0;"><label>Start</label><input type="time" name="start" value="09:00"></div>
+      <div class="field" style="margin:0;"><label>End</label><input type="time" name="end" value="17:00"></div>
+      <button class="btn">ADD</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "dash_base.html" %}
+{% block title %}{{ m.user.full_name }} · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>{{ m.user.full_name }}</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="grid2">
+    <div class="panel">
+      <h2>Profile</h2>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-grid two">
+          <div class="field"><label>Full name</label><input type="text" name="full_name" value="{{ m.user.full_name }}"></div>
+          <div class="field"><label>Email</label><input type="email" name="email" value="{{ m.user.email }}"></div>
+          <div class="field"><label>Phone</label><input type="tel" name="phone" value="{{ m.user.phone or '' }}"></div>
+          <div class="field"><label>Emergency contact</label><input type="text" name="emergency_contact" value="{{ m.emergency_contact or '' }}"></div>
+        </div>
+        <div class="field"><label>Assigned trainer</label>
+          <select name="assigned_trainer_id">
+            <option value="">— none —</option>
+            {% for t in trainers %}<option value="{{ t.id }}" {{ 'selected' if m.assigned_trainer_id==t.id }}>{{ t.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <button class="btn">SAVE</button>
+      </form>
+      <div style="margin-top:16px; display:flex; gap:10px;">
+        {% if m.user.status=='active' %}
+        <button class="btn danger sm" data-action="/admin/action/member/{{ m.id }}/suspend" data-confirm="Suspend this member's account?">Suspend account</button>
+        {% else %}
+        <button class="btn sm" data-action="/admin/action/member/{{ m.id }}/activate">Reactivate account</button>
+        {% endif %}
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Membership</h2>
+      {% if mem %}
+      <div class="panel-row"><span class="muted">Plan</span><span>{{ mem.plan.name }}</span></div>
+      <div class="panel-row"><span class="muted">Status</span><span class="badge ok">{{ mem.status }}</span></div>
+      <div class="panel-row"><span class="muted">Expires</span><span>{{ mem.end_date|fdate }}</span></div>
+      {% else %}<div class="empty-state">No active membership.</div>{% endif %}
+      <form data-grant style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+        <select id="grantPlan" style="background:#000; border:1px solid #ffffff2c; color:#fff; padding:10px;">
+          {% for p in plans %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+        </select>
+        <select id="grantBilling" style="background:#000; border:1px solid #ffffff2c; color:#fff; padding:10px;"><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select>
+        <button type="button" class="btn sm" onclick="grant()">GRANT / RENEW (front desk payment)</button>
+      </form>
+      <h2 style="margin-top:22px;">Streak</h2>
+      <div class="panel-row"><span class="muted">Current</span><span>🔥 {{ streak }}</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Membership history</h2>
+    <div class="dt-wrap"><table class="dt"><tr><th>Plan</th><th>Kind</th><th>Status</th><th>Start</th><th>End</th></tr>
+      {% for h in history %}<tr><td>{{ h.plan.name }}</td><td>{{ h.kind }}</td><td><span class="badge muted">{{ h.status }}</span></td><td>{{ h.start_date|fdate }}</td><td>{{ h.end_date|fdate }}</td></tr>
+      {% else %}<tr><td colspan="5" class="empty-state">No history.</td></tr>{% endfor %}
+    </table></div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h2>Payments</h2>
+      <div class="dt-wrap"><table class="dt"><tr><th>Desc</th><th>Amount</th><th>Status</th></tr>
+        {% for p in payments %}<tr><td>{{ p.description }}</td><td>${{ '%.2f'|format(p.amount_cents/100) }}</td><td><span class="badge {{ 'ok' if p.status=='paid' else 'warn' }}">{{ p.status }}</span></td></tr>
+        {% else %}<tr><td colspan="3" class="empty-state">None yet.</td></tr>{% endfor %}
+      </table></div>
+    </div>
+    <div class="panel">
+      <h2>Attendance</h2>
+      <div class="dt-wrap"><table class="dt"><tr><th>Date</th><th>Method</th></tr>
+        {% for a in attendance %}<tr><td>{{ a.checked_in_at|fdt }}</td><td>{{ a.method }}</td></tr>
+        {% else %}<tr><td colspan="2" class="empty-state">None yet.</td></tr>{% endfor %}
+      </table></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h2>Class bookings</h2>
+      <div class="dt-wrap"><table class="dt"><tr><th>Class</th><th>When</th><th>Status</th></tr>
+        {% for b in cbs %}<tr><td>{{ b.gym_class.name }}</td><td>{{ b.gym_class.starts_at|fdt }}</td><td><span class="badge muted">{{ b.status }}</span></td></tr>
+        {% else %}<tr><td colspan="3" class="empty-state">None yet.</td></tr>{% endfor %}
+      </table></div>
+    </div>
+    <div class="panel">
+      <h2>Trainer sessions</h2>
+      <div class="dt-wrap"><table class="dt"><tr><th>Service</th><th>When</th><th>Status</th></tr>
+        {% for s in ses %}<tr><td>{{ s.service }}</td><td>{{ s.starts_at|fdt }}</td><td><span class="badge muted">{{ s.status }}</span></td></tr>
+        {% else %}<tr><td colspan="3" class="empty-state">None yet.</td></tr>{% endfor %}
+      </table></div>
+    </div>
+  </div>
+  <a href="/trainer/members/{{ m.id }}" class="btn outline sm" style="margin-top:6px;">View fitness progress →</a>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+async function grant(){
+  const data=await api('/admin/action/member/{{ m.id }}/grant', {plan_id:document.getElementById('grantPlan').value, billing:document.getElementById('grantBilling').value});
+  toast(data.ok?data.message:data.error, data.ok?'ok':'error');
+  if(data.ok) setTimeout(()=>location.reload(), 800);
+}
+</script>
+{% endblock %}

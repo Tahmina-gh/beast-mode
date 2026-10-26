@@ -1,0 +1,101 @@
+{% extends "dash_base.html" %}
+{% block title %}My Dashboard · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Welcome, {{ m.user.first_name }}</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+
+  {% if not m.user.email_verified %}
+  <div class="flash info" style="display:flex; justify-content:space-between; align-items:center;">
+    <span>Please verify your email address.</span>
+    <form method="post" action="{{ url_for('auth.resend_verification') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn sm outline">Resend</button></form>
+  </div>
+  {% endif %}
+
+  <div class="cards">
+    <a href="/member/membership" class="kpi"><div class="v">{{ mem.plan.name if mem else 'None' }}</div><div class="l">Current Membership</div></a>
+    <a href="/member/membership" class="kpi"><div class="v">{{ mem.end_date|fdate if mem else '—' }}</div><div class="l">Expires{% if info and info.expiring %} <span style="color:var(--red)">· soon</span>{% endif %}</div></a>
+    <a href="/member/bookings" class="kpi"><div class="v">{{ classes|length }}</div><div class="l">Upcoming Classes</div></a>
+    <a href="/member/bookings" class="kpi"><div class="v">{{ sessions|length }}</div><div class="l">Upcoming PT Sessions</div></a>
+    <a href="/member/progress" class="kpi"><div class="v streak-flame">🔥 {{ streak }}</div><div class="l">Week Streak</div></a>
+    <a href="/member/progress" class="kpi"><div class="v">{{ visits }}</div><div class="l">Visits This Month</div></a>
+  </div>
+
+  {% if not mem %}
+  <div class="panel" style="border-color:var(--orange);">
+    <h2 style="margin-bottom:8px;">You don't have an active membership</h2>
+    <p class="muted" style="margin-bottom:16px;">Pick a plan to start booking classes and trainers.</p>
+    <a href="/member/membership" class="btn">VIEW PLANS</a>
+  </div>
+  {% endif %}
+
+  <div class="quick">
+    <a href="/member/classes" class="btn">BOOK CLASS</a>
+    <a href="/member/trainers" class="btn outline">BOOK TRAINER</a>
+    <a href="/member/qr" class="btn outline">CHECK IN (QR)</a>
+    <a href="/member/membership" class="btn outline">VIEW MEMBERSHIP</a>
+    <a href="/member/payments" class="btn outline">MAKE PAYMENT</a>
+    <a href="/member/bookings" class="btn outline">VIEW SCHEDULE</a>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>Upcoming classes</h2>
+      {% if classes %}
+        {% for b in classes %}
+        <div class="panel-row">
+          <div><div style="font-weight:700;">{{ b.gym_class.name }}</div><div class="muted" style="font-size:.78rem;">{{ b.gym_class.starts_at|fdt }} · {{ b.gym_class.location }}</div></div>
+          <span class="badge {{ 'warn' if b.status=='offered' else 'ok' }}">{{ b.status }}</span>
+        </div>
+        {% endfor %}
+      {% else %}<div class="empty-state">No upcoming classes. <a href="/member/classes" style="color:var(--orange)">Browse classes →</a></div>{% endif %}
+    </div>
+    <div class="panel">
+      <h2>Upcoming trainer sessions</h2>
+      {% if sessions %}
+        {% for s in sessions %}
+        <div class="panel-row">
+          <div><div style="font-weight:700;">{{ s.service }} with {{ s.trainer.name }}</div><div class="muted" style="font-size:.78rem;">{{ s.starts_at|fdt }}</div></div>
+          <span class="badge {{ 'warn' if s.status=='pending_payment' else 'ok' }}">{{ 'awaiting payment' if s.status=='pending_payment' else s.status }}</span>
+        </div>
+        {% endfor %}
+      {% else %}<div class="empty-state">No upcoming sessions. <a href="/member/trainers" style="color:var(--orange)">Book a trainer →</a></div>{% endif %}
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>Attendance — last 8 weeks</h2>
+      <div class="mini-bars">
+        {% set mx = (weekly|map(attribute=1)|max) or 1 %}
+        {% for lbl, v in weekly %}<i style="height:{{ (v/mx*100)|round|int if mx else 0 }}%;" title="{{ lbl }}: {{ v }}"></i>{% endfor %}
+      </div>
+      <div class="lbl">{% for lbl, v in weekly %}<span>{{ lbl }}</span>{% endfor %}</div>
+    </div>
+    <div class="panel">
+      <h2>Recent check-ins</h2>
+      {% if history %}
+        {% for a in history %}
+        <div class="panel-row"><span>{{ a.checked_in_at|fdt }}</span><span class="muted">{{ (a.checked_out_at - a.checked_in_at).seconds // 60 ~ ' min' if a.checked_out_at else 'in progress' }}</span></div>
+        {% endfor %}
+      {% else %}<div class="empty-state">No check-ins yet. Use your QR code at the front desk.</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>Recent payments</h2>
+      {% if payments %}
+        {% for p in payments %}
+        <div class="panel-row"><span>{{ p.description }}</span><span>${{ '%.2f'|format(p.amount_cents/100) }} <span class="badge {{ 'ok' if p.status=='paid' else ('warn' if p.status=='pending' else 'bad') }}">{{ p.status }}</span></span></div>
+        {% endfor %}
+      {% else %}<div class="empty-state">No payments yet.</div>{% endif %}
+    </div>
+    <div class="panel">
+      <h2>Notifications</h2>
+      {% if notes %}
+        {% for n in notes %}<div class="panel-row"><span>{{ n.title }}</span><span class="muted" style="font-size:.76rem;">{{ n.created_at|fdt }}</span></div>{% endfor %}
+      {% else %}<div class="empty-state">You're all caught up.</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

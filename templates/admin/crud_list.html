@@ -1,0 +1,39 @@
+{% extends "dash_base.html" %}
+{% block title %}{{ cfg.title }} · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>{{ cfg.title }}</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <a href="/admin/crud/{{ key }}/new" class="btn" style="margin-bottom:18px; display:inline-block;">+ ADD {{ cfg.singular.upper() }}</a>
+  <div class="panel">
+    <div class="dt-wrap"><table class="dt">
+      <tr>{% for f in cfg.list %}<th>{{ f.replace('_',' ')|title }}</th>{% endfor %}<th></th></tr>
+      {% for item in items %}
+      <tr>
+        {% for f in cfg.list %}
+        <td>
+          {% set v = item|getattr(f) %}
+          {% if f.endswith('_cents') %}${{ '%.2f'|format((v or 0)/100) }}
+          {% elif v is sameas true %}<span class="badge ok">Yes</span>
+          {% elif v is sameas false %}<span class="badge muted">No</span>
+          {% elif v.__class__.__name__ == 'datetime' %}{{ v|fdt }}
+          {% else %}{{ v if v is not none else '—' }}{% endif %}
+        </td>
+        {% endfor %}
+        <td class="inline-actions">
+          <a class="btn sm outline" href="/admin/crud/{{ key }}/{{ item.id }}">Edit</a>
+          {% if key == 'classes' and item.status == 'scheduled' %}
+          <button class="btn sm danger" data-action="/admin/crud/classes/{{ item.id }}/cancel" data-confirm="Cancel this class and notify everyone booked?">Cancel class</button>
+          {% else %}
+          <form method="post" action="/admin/crud/{{ key }}/{{ item.id }}/delete" style="display:inline;" onsubmit="return confirm('Delete this {{ cfg.singular }}?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn sm danger" type="submit">Delete</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="{{ cfg.list|length + 1 }}" class="empty-state">Nothing here yet.</td></tr>{% endfor %}
+    </table></div>
+    {% if pg.pages > 1 %}<div class="pager">{% for n in range(1, pg.pages+1) %}<a href="{{ qs(page=n) }}" class="{{ 'cur' if n==pg.page }}">{{ n }}</a>{% endfor %}</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

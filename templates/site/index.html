@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+{% block title %}{{ gym_name }} — Built For More{% endblock %}
+{% block extra_css %}
+<style>
+/* page-specific additions on top of site.css (modal, forms, dynamic sections) */
+.modal-backdrop{position:fixed; inset:0; z-index:300; background:#000000b3; backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:20px; overflow-y:auto;}
+.modal-backdrop.open{display:flex;}
+.modal{background:var(--graphite); border:1px solid #ffffff1c; width:100%; max-width:440px; padding:30px 28px; position:relative; margin:auto;}
+.modal h3{font-family:var(--font-d); text-transform:uppercase; font-size:1.3rem; margin-bottom:6px;}
+.modal p.modal-sub{color:#a8a89f; font-size:.85rem; margin-bottom:18px;}
+.modal .frow{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.modal input,.modal select,.modal textarea{width:100%; background:#000; border:1px solid #ffffff2c; color:#fff; padding:12px 14px; font-size:.9rem; margin-bottom:12px;}
+.modal textarea{min-height:70px; resize:vertical;}
+.modal button.submit{width:100%; background:var(--grad); color:#fff; border:none; padding:14px; font-weight:800; letter-spacing:.03em; cursor:pointer;}
+.modal-close{position:absolute; top:14px; right:16px; background:none; border:none; color:#a8a89f; font-size:1.3rem; cursor:pointer;}
+.modal-msg{font-size:.85rem; margin-top:12px; min-height:18px;}
+.modal-msg.ok{color:var(--volt);} .modal-msg.err{color:var(--red);}
+.hp{display:none;}
+.class-card{background:var(--graphite); border:1px solid #ffffff14; padding:22px; position:relative;}
+.class-card::before{content:''; position:absolute; top:0; left:0; width:5px; height:100%; background:var(--grad);}
+.testi{background:var(--graphite); border:1px solid #ffffff14; padding:24px; flex:0 0 320px; scroll-snap-align:start;}
+.testi .stars{color:var(--volt); letter-spacing:2px; margin-bottom:10px;}
+.faq-item{border-bottom:1px solid #ffffff14; padding:18px 0;}
+.faq-item summary{cursor:pointer; font-weight:700; list-style:none; display:flex; justify-content:space-between;}
+.faq-item summary::-webkit-details-marker{display:none;}
+.faq-item p{color:#a8a89f; margin-top:10px; font-size:.9rem;}
+.quiz-box{background:var(--graphite); border:1px solid #ffffff14; padding:28px; max-width:560px; margin:40px auto 0;}
+.quiz-box select,.quiz-box input{width:100%; background:#000; border:1px solid #ffffff2c; color:#fff; padding:12px 14px; margin-bottom:12px;}
+.quiz-result{margin-top:18px; padding:18px; background:#000; border-left:3px solid var(--orange); display:none;}
+.topbar-mini{position:fixed; top:10px; right:14px; z-index:60; display:flex; gap:10px; align-items:center;}
+.topbar-mini a{color:#c8c8c2; font-size:.78rem; text-decoration:none; font-weight:700;}
+</style>
+{% endblock %}
+{% block body %}
+<header>
+  <nav>
+    <div class="logo">BEAST<span>MODE</span></div>
+    <div class="navlinks">
+      <a href="#experience">Experience</a><a href="#training">Training</a><a href="#classes">Classes</a><a href="#tour">The Gym</a>
+      <a href="#trainers">Trainers</a><a href="#membership">Membership</a><a href="#facility">Facility</a>
+    </div>
+    <div class="nav-right">
+      {% if cu() %}<a class="nav-login" href="{{ '/admin' if cu().role_name=='admin' else ('/trainer' if cu().role_name=='trainer' else '/member') }}">My dashboard</a>
+      {% else %}<a class="nav-login" href="{{ url_for('auth.login') }}">Log in</a>{% endif %}
+      <button class="navcta" onclick="openModal('trial')">JOIN NOW</button>
+      <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+</header>
+<div class="mobile-menu" id="mobileMenu">
+  {% for href, label in [('#experience','Experience'),('#training','Training'),('#classes','Classes'),('#tour','The Gym'),('#trainers','Trainers'),('#membership','Membership'),('#facility','Facility')] %}
+  <a class="mm-link" href="{{ href }}">{{ label }}</a>
+  {% endfor %}
+  <div class="mm-actions">
+    <button class="btn-primary" onclick="closeMenu(); openModal('trial')">START FREE TRIAL</button>
+    <button class="btn-ghost" onclick="closeMenu(); openModal('tour')">BOOK A TOUR</button>
+    {% if cu() %}<a class="btn-ghost" href="{{ '/admin' if cu().role_name=='admin' else ('/trainer' if cu().role_name=='trainer' else '/member') }}">MY DASHBOARD</a>
+    {% else %}<a class="btn-ghost" href="{{ url_for('auth.login') }}">LOG IN</a>{% endif %}
+  </div>
+</div>
+
+<section class="hero">
+  <div class="hero-media" aria-hidden="true">
+    {% set tsl = content.hero_title.split('|') if content.hero_title else ['BUILT FOR','MORE.'] %}
+    <img class="slide" src="{{ media_url(content.hero_image_1) if content.hero_image_1 else 'https://images.unsplash.com/photo-1637430308606-86576d8fef3c?fm=jpg&q=75&w=1920&auto=format&fit=crop' }}" alt="">
+    <img class="slide" src="{{ media_url(content.hero_image_2) if content.hero_image_2 else 'https://images.unsplash.com/photo-1513352098199-8ccf457b35a8?fm=jpg&q=75&w=1920&auto=format&fit=crop' }}" alt="">
+    <img class="slide" src="{{ media_url(content.hero_image_3) if content.hero_image_3 else 'https://images.unsplash.com/photo-1708793637823-1f9d7f7c7749?fm=jpg&q=75&w=1920&auto=format&fit=crop' }}" alt="">
+    {% if content.hero_video %}<video autoplay muted loop playsinline onloadeddata="this.style.opacity=1" onerror="this.remove()"><source src="{{ media_url(content.hero_video) }}"></video>{% endif %}
+  </div>
+  <div class="hero-content">
+    <h1>{{ tsl[0] }}<br>{{ tsl[1] if tsl|length>1 else '' }}</h1>
+    <p class="sub">{{ content.hero_subtitle or "Train stronger. Move better. Become your strongest self." }}</p>
+    <div class="hero-ctas">
+      <button class="btn-primary" onclick="openModal('trial')">START FREE TRIAL</button>
+      <button class="btn-ghost" onclick="document.getElementById('membership').scrollIntoView({behavior:'smooth'})">EXPLORE MEMBERSHIP</button>
+    </div>
+  </div>
+  <div class="scroll-cue">SCROLL</div>
+</section>
+
+<div class="ticker-wrap" aria-hidden="true">
+  <div class="ticker">
+    {% set items = (content.ticker or "STRENGTH TRAINING|BOXING|FREE WEIGHTS|CARDIO|MOBILITY|24/7 ACCESS").split('|') %}
+    {% for _ in range(2) %}
+    <span>{% for it in items %}{{ it }} <span class="sep">◆</span> {% endfor %}</span>
+    {% endfor %}
+  </div>
+</div>
+
+<section class="exp" id="experience">
+  <img id="expImg" src="{{ media_url(content.experience_image) if content.experience_image else 'https://images.unsplash.com/photo-1637430308606-86576d8fef3c?fm=jpg&q=75&w=1920&auto=format&fit=crop' }}" alt="Gym floor, wide">
+  <div class="wrap reveal">
+    <span class="eyebrow">THE EXPERIENCE</span>
+    <h2 class="sec-h">{{ content.experience_title or "Not just a gym." }}</h2>
+    <p class="sec-sub">{{ content.experience_text or "An environment designed to make every workout count." }}</p>
+  </div>
+</section>
+
+<section id="training">
+  <div class="wrap reveal"><span class="eyebrow">TRAINING</span><h2 class="sec-h">Three ways to train.</h2></div>
+  <div class="train-grid wrap" style="padding:0 24px;">
+    <div class="train-card"><img src="{{ media_url(content.training_strength_image) if content.training_strength_image else 'https://images.unsplash.com/photo-1513352098199-8ccf457b35a8?fm=jpg&q=75&w=900&auto=format&fit=crop' }}" alt="Strength"><div class="tc-txt"><h3>Strength</h3><p>Build power and muscle with expert-led strength training.</p></div></div>
+    <div class="train-card"><img src="{{ media_url(content.training_performance_image) if content.training_performance_image else 'https://images.unsplash.com/photo-1639660299469-9e9279364c97?fm=jpg&q=75&w=900&auto=format&fit=crop' }}" alt="Performance"><div class="tc-txt"><h3>Performance</h3><p>Push your limits with high-performance conditioning.</p></div></div>
+    <div class="train-card"><img src="{{ media_url(content.training_mobility_image) if content.training_mobility_image else 'https://images.unsplash.com/photo-1589579234096-25cb6b83e021?fm=jpg&q=75&w=900&auto=format&fit=crop' }}" alt="Mobility"><div class="tc-txt"><h3>Mobility</h3><p>Move better, recover faster and train smarter.</p></div></div>
+  </div>
+</section>
+
+<section id="classes" style="background:var(--graphite);">
+  <div class="wrap reveal">
+    <span class="eyebrow">BOOK A CLASS</span>
+    <h2 class="sec-h">Upcoming sessions.</h2>
+    <p class="sec-sub">Browse what's on in the next two weeks. {% if not cu() %}<a href="{{ url_for('auth.login') }}" style="color:var(--orange)">Log in</a> or <a href="{{ url_for('auth.signup') }}" style="color:var(--orange)">create an account</a> to book.{% endif %}</p>
+    {% if categories %}
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:22px;">
+      <button class="cat-f btn-ghost" data-cat="" style="padding:8px 16px; font-size:.75rem;">ALL</button>
+      {% for c in categories %}<button class="cat-f btn-ghost" data-cat="{{ c }}" style="padding:8px 16px; font-size:.75rem;">{{ c.upper() }}</button>{% endfor %}
+    </div>
+    {% endif %}
+    <div class="train-grid" id="classGrid" style="margin-top:28px; background:none; gap:16px; grid-template-columns:repeat(auto-fill,minmax(270px,1fr));">
+      {% for c in classes %}
+      <div class="class-card" data-cat="{{ c.category }}" data-id="{{ c.id }}">
+        <div style="font-size:.68rem; letter-spacing:.12em; color:var(--volt); font-weight:800;">{{ c.category.upper() }}</div>
+        <h3 style="font-size:1.3rem; margin-top:4px;">{{ c.name }}</h3>
+        <div style="font-size:.84rem; color:#c8c8c2; margin:12px 0;">
+          <div>{{ c.starts_at|fdt }}</div>
+          <div style="margin-top:4px;">{{ c.location }} · {{ c.trainer.name if c.trainer else 'Staff' }}</div>
+          <div class="spots" style="margin-top:8px; font-weight:700; color:{{ 'var(--red)' if c.is_full else 'var(--orange)' }}">{{ 'FULLY BOOKED' if c.is_full else c.remaining ~ ' spots remaining' }}</div>
+        </div>
+        {% if c.is_full %}
+        <button class="btn-ghost" style="width:100%; padding:11px;" onclick="bookClass({{ c.id }}, true)">JOIN WAITLIST</button>
+        {% else %}
+        <button class="btn-ghost" style="width:100%; padding:11px;" onclick="bookClass({{ c.id }}, false)">BOOK CLASS</button>
+        {% endif %}
+      </div>
+      {% else %}
+      <p class="sec-sub">No classes scheduled right now — check back soon.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if content.cine_video or content.cine_image or true %}
+<section class="cine">
+  <img src="{{ media_url(content.cine_image) if content.cine_image else 'https://images.unsplash.com/photo-1708793637823-1f9d7f7c7749?fm=jpg&q=75&w=1920&auto=format&fit=crop' }}" alt="">
+  {% if content.cine_video %}<video autoplay muted loop playsinline onloadeddata="this.style.opacity=1" onerror="this.remove()"><source src="{{ media_url(content.cine_video) }}"></video>{% endif %}
+  <div class="cine-inner">
+    <h2>{{ content.cine_title or "Every rep has a purpose." }}</h2>
+    <button class="play-btn" aria-label="Book a tour" onclick="openModal('tour')"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+  </div>
+</section>
+{% endif %}
+
+<section id="tour">
+  <div class="wrap reveal">
+    <span class="eyebrow">THE GYM</span>
+    <h2 class="sec-h">Explore the floor.</h2>
+    <p class="sec-sub">Tap a point to see what's there, or book a full in-person tour.</p>
+    <div class="tour-wrap">
+      <div class="tour-img">
+        <img src="https://images.unsplash.com/photo-1637430308606-86576d8fef3c?fm=jpg&q=70&w=1600&auto=format&fit=crop" alt="Gym floor plan overview">
+        {% for f in facilities %}
+        <button class="hotspot {{ 'active' if loop.first }}" style="left:{{ f.pos_x or 50 }}%; top:{{ f.pos_y or 50 }}%;" data-title="{{ f.name }}" data-desc="{{ f.description }}" aria-label="{{ f.name }}"></button>
+        {% endfor %}
+      </div>
+      <div class="tour-info">
+        <div>
+          <h4 id="tourTitle">{{ facilities[0].name.upper() if facilities else 'FACILITY' }}</h4>
+          <p id="tourDesc">{{ facilities[0].description if facilities else '' }}</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div class="tour-list">{% for f in facilities %}<span>{{ f.name }}</span>{% endfor %}</div>
+          <button class="btn-ghost" style="padding:10px 16px; font-size:.75rem;" onclick="openModal('tour')">BOOK A TOUR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="trainers" style="background:var(--graphite);">
+  <div class="wrap reveal">
+    <span class="eyebrow">COACHING</span><h2 class="sec-h">Train with the best.</h2>
+    <div class="trainer-grid">
+      {% for t in trainers %}
+      <div class="trainer">
+        <div class="ph"><img src="{{ media_url(t.photo) }}" alt="Coach {{ t.name }}"></div>
+        <div class="info">
+          <h3>{{ t.name }}</h3>
+          <div class="spec">{{ t.specialization }} · {{ t.experience_years }} years</div>
+          <p class="bio">{{ t.bio }}</p>
+          {% if cu() and cu().role_name=='member' %}
+          <a href="/member/trainers?trainer={{ t.id }}" class="btn-ghost" style="display:inline-block; margin-top:16px; padding:11px 20px; font-size:.78rem; text-decoration:none;">BOOK SESSION</a>
+          {% else %}
+          <button onclick="location.href='{{ url_for('auth.login') }}'">BOOK SESSION</button>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section id="membership">
+  <div class="wrap reveal">
+    <span class="eyebrow">MEMBERSHIP</span><h2 class="sec-h">Pick your plan.</h2>
+    <div class="tier-grid">
+      {% for p in plans %}
+      <div class="tier {{ 'feat' if p.featured }}">
+        <div class="kicker">{{ 'MOST POPULAR' if p.featured else p.name.upper() }}</div>
+        <h3>{{ p.name }}</h3>
+        <div class="price">${{ '%.0f'|format(p.price_monthly_cents/100) }}<span>/mo</span></div>
+        <ul>
+          {% for b in p.benefit_list %}<li>{{ b }}</li>{% endfor %}
+        </ul>
+        {% if cu() and cu().role_name=='member' %}
+        <a href="/member/membership?plan={{ p.id }}" class="{{ 'btn-primary' if p.featured else 'btn-ghost' }}" style="display:block; text-align:center; text-decoration:none;">CHOOSE {{ p.name.upper() }}</a>
+        {% else %}
+        <button class="{{ 'btn-primary' if p.featured else 'btn-ghost' }}" onclick="location.href='{{ url_for('auth.signup') }}'">CHOOSE {{ p.name.upper() }}</button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if testimonials %}
+<section style="background:var(--graphite);">
+  <div class="wrap reveal">
+    <span class="eyebrow">RESULTS</span><h2 class="sec-h">Real progress.</h2>
+    <div class="hscroll">
+      {% for t in testimonials %}
+      <div class="testi">
+        <div class="stars">{{ '★' * t.rating }}{{ '☆' * (5 - t.rating) }}</div>
+        <p style="font-size:.92rem; color:#d8d8d2;">"{{ t.text }}"</p>
+        <div style="margin-top:14px; font-weight:700;">{{ t.name }}</div>
+        <div class="muted" style="font-size:.78rem;">{{ t.goal }} · {{ t.duration }} · {{ t.result }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section id="facility">
+  <div class="wrap reveal">
+    <span class="eyebrow">FACILITY</span><h2 class="sec-h">A tour of the space.</h2>
+    <div class="gallery">
+      {% for f in facilities %}
+      <div class="gal-item"><img src="{{ media_url(f.image) }}" alt="{{ f.name }}"><span>{{ f.name.upper() }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--graphite);">
+  <div class="wrap reveal" style="text-align:center;">
+    <span class="eyebrow">NOT SURE WHERE TO START?</span><h2 class="sec-h" style="margin:10px auto;">Take the 30-second quiz.</h2>
+  </div>
+  <div class="quiz-box reveal">
+    <div class="field" style="margin-bottom:0;">
+      <label style="color:#a8a89f; font-size:.8rem;">Your goal</label>
+      <select id="qGoal"><option>Build muscle</option><option>Lose weight</option><option>Improve strength</option><option>Improve endurance</option><option>Improve mobility</option><option>General fitness</option></select>
+      <label style="color:#a8a89f; font-size:.8rem;">Experience level</label>
+      <select id="qExp"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select>
+      <label style="color:#a8a89f; font-size:.8rem;">Days per week you can train</label>
+      <input type="number" id="qDays" min="1" max="7" value="3">
+      <label style="color:#a8a89f; font-size:.8rem;">Preferred training style</label>
+      <select id="qPref"><option>Weights</option><option>Classes</option><option>Cardio</option><option>Boxing</option><option>Mobility</option><option>Mixed</option></select>
+      <label style="color:#a8a89f; font-size:.8rem;">Available time</label>
+      <select id="qTime"><option>Morning</option><option>Midday</option><option>Evening</option><option>Late night</option></select>
+      <button class="btn-primary" style="width:100%; margin-top:6px;" onclick="runQuiz()">GET MY RECOMMENDATION</button>
+      <div class="quiz-result" id="quizResult"></div>
+    </div>
+  </div>
+</section>
+
+{% if faqs %}
+<section>
+  <div class="wrap reveal" style="max-width:800px;">
+    <span class="eyebrow">FAQ</span><h2 class="sec-h">Good to know.</h2>
+    <div style="margin-top:26px;">
+      {% for f in faqs %}
+      <details class="faq-item"><summary>{{ f.question }} <span>+</span></summary><p>{{ f.answer }}</p></details>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section id="contact" style="background:var(--graphite);">
+  <div class="wrap reveal" style="max-width:600px;">
+    <span class="eyebrow">CONTACT</span><h2 class="sec-h">Get in touch.</h2>
+    <p class="sec-sub">{{ content.address }} · {{ content.hours }} · {{ content.contact_phone }}</p>
+    <form id="contactForm" style="margin-top:22px;" onsubmit="return submitContact(event)">
+      <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
+      <input type="text" placeholder="Name" name="name" required style="width:100%; background:#000; border:1px solid #ffffff2c; color:#fff; padding:12px 14px; margin-bottom:12px;">
+      <input type="email" placeholder="Email" name="email" required style="width:100%; background:#000; border:1px solid #ffffff2c; color:#fff; padding:12px 14px; margin-bottom:12px;">
+      <input type="tel" placeholder="Phone (optional)" name="phone" style="width:100%; background:#000; border:1px solid #ffffff2c; color:#fff; padding:12px 14px; margin-bottom:12px;">
+      <textarea placeholder="Message" name="message" required style="width:100%; background:#000; border:1px solid #ffffff2c; color:#fff; padding:12px 14px; min-height:90px; margin-bottom:12px;"></textarea>
+      <button type="submit" class="btn-primary" style="width:100%;">SEND MESSAGE</button>
+      <div class="modal-msg" id="contactMsg"></div>
+    </form>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap">
+    <h2>WHAT WILL YOU BUILD?</h2>
+    <p class="sec-sub" style="margin:0 auto;">Your first session is free — no contract, no pressure.</p>
+    <button class="btn-primary" onclick="openModal('trial')">START FREE TRIAL</button>
+  </div>
+</section>
+
+<footer>© {{ now().year }} {{ gym_name }} TRAINING CO. · {{ content.address }} · {{ content.contact_email }}</footer>
+
+<!-- shared modal: free trial + tour booking -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    <h3 id="modalTitle">Start Your Trial</h3>
+    <p class="modal-sub" id="modalSub">First session's free. Tell us where to reach you.</p>
+    <form id="modalForm" onsubmit="return submitModal(event)">
+      <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
+      <input type="text" id="mName" placeholder="Full name" required>
+      <input type="email" id="mEmail" placeholder="Email" required>
+      <input type="tel" id="mPhone" placeholder="Phone" required>
+      <div id="trialFields">
+        <div class="frow"><input type="number" id="mAge" placeholder="Age" min="12" max="90"></div>
+        <select id="mGoal"><option>Build muscle</option><option>Lose weight</option><option>Improve strength</option><option>Improve endurance</option><option>Improve mobility</option><option>General fitness</option></select>
+        <div class="frow"><input type="date" id="mDate"><select id="mTime"><option>Morning</option><option>Midday</option><option>Evening</option><option>Late night</option></select></div>
+        <select id="mLevel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select>
+      </div>
+      <div id="tourFields" style="display:none;">
+        <div class="frow"><input type="date" id="tDate"><input type="time" id="tTime"></div>
+      </div>
+      <button type="submit" class="submit" id="modalSubmit">Send</button>
+      <div class="modal-msg" id="modalMsg"></div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const hb=document.getElementById('hamburger'), mm=document.getElementById('mobileMenu');
+function closeMenu(){ mm.classList.remove('open'); hb.classList.remove('open'); hb.setAttribute('aria-expanded','false'); document.body.classList.remove('menu-open'); }
+hb.addEventListener('click',()=>{ const o=mm.classList.toggle('open'); hb.classList.toggle('open',o); hb.setAttribute('aria-expanded',o); document.body.classList.toggle('menu-open',o); });
+mm.querySelectorAll('a.mm-link').forEach(a=>a.addEventListener('click', closeMenu));
+window.addEventListener('resize',()=>{ if(innerWidth>=900) closeMenu(); });
+const LOGGED_IN = {{ 'true' if cu() else 'false' }};
+document.querySelectorAll('.reveal').forEach(el=>{
+  new IntersectionObserver((es)=>es.forEach(e=>{if(e.isIntersecting) e.target.classList.add('in');}),{threshold:.15}).observe(el);
+});
+window.addEventListener('scroll',()=>{
+  const img=document.getElementById('expImg'); if(!img) return;
+  const r=img.parentElement.getBoundingClientRect();
+  const p=Math.max(-1,Math.min(1,(r.top)/window.innerHeight));
+  img.style.transform=`translateY(${p*40}px) scale(1.08)`;
+},{passive:true});
+document.querySelectorAll('img').forEach(img=>{
+  img.addEventListener('error', ()=>{ img.style.background='linear-gradient(135deg,#1a1a1c,#0a0a0b)'; img.removeAttribute('src'); }, {once:true});
+});
+
+// tour hotspots
+document.querySelectorAll('.hotspot').forEach(h=>{
+  h.addEventListener('click',()=>{
+    document.querySelectorAll('.hotspot').forEach(x=>x.classList.remove('active'));
+    h.classList.add('active');
+    document.getElementById('tourTitle').textContent=h.dataset.title.toUpperCase();
+    document.getElementById('tourDesc').textContent=h.dataset.desc;
+  });
+});
+
+// class category filter
+document.querySelectorAll('.cat-f').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.cat-f').forEach(x=>x.style.opacity='.6');
+    b.style.opacity='1';
+    const cat=b.dataset.cat;
+    document.querySelectorAll('#classGrid .class-card').forEach(c=>{
+      c.style.display = (!cat || c.dataset.cat===cat) ? '' : 'none';
+    });
+  });
+});
+
+async function bookClass(id, waitlist){
+  if(!LOGGED_IN){ location.href='/login?next=/%23classes'; return; }
+  const data = await api(`/api/classes/${id}/${waitlist ? 'waitlist' : 'book'}`, {});
+  toast(data.ok ? (data.message || 'Done.') : (data.error || 'Something went wrong.'), data.ok ? 'ok' : 'error');
+  if(data.ok) setTimeout(()=>location.reload(), 900);
+}
+
+// shared modal (trial / tour)
+let modalMode='trial';
+function openModal(mode){
+  modalMode=mode;
+  document.getElementById('trialFields').style.display = mode==='trial' ? 'block' : 'none';
+  document.getElementById('tourFields').style.display = mode==='tour' ? 'block' : 'none';
+  document.getElementById('modalTitle').textContent = mode==='trial' ? 'Start Your Free Trial' : 'Book a Gym Tour';
+  document.getElementById('modalSub').textContent = mode==='trial' ? "First session's free — tell us where to reach you." : "See the whole facility in person. Pick a date and time.";
+  document.getElementById('modalMsg').textContent=''; document.getElementById('modalMsg').className='modal-msg';
+  document.getElementById('modalForm').reset();
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+function closeModal(){ document.getElementById('modalBackdrop').classList.remove('open'); }
+document.getElementById('modalBackdrop').addEventListener('click', e=>{ if(e.target.id==='modalBackdrop') closeModal(); });
+
+async function submitModal(e){
+  e.preventDefault();
+  const btn=document.getElementById('modalSubmit'), msgEl=document.getElementById('modalMsg');
+  btn.disabled=true; btn.textContent='Sending…';
+  const base={name:mName.value, email:mEmail.value, phone:mPhone.value, website:document.querySelector('#modalForm [name=website]').value};
+  let data;
+  if(modalMode==='trial'){
+    data=await api('/api/trials', {...base, age:mAge.value, goal:mGoal.value, preferred_date:mDate.value, preferred_time:mTime.value, experience:mLevel.value});
+  } else {
+    data=await api('/api/tours', {...base, tour_date:tDate.value, tour_time:tTime.value});
+  }
+  btn.disabled=false; btn.textContent='Send';
+  if(data.ok){ msgEl.textContent=data.message; msgEl.className='modal-msg ok'; setTimeout(closeModal, 2200); }
+  else{ msgEl.textContent=data.error; msgEl.className='modal-msg err'; }
+  return false;
+}
+
+async function submitContact(e){
+  e.preventDefault();
+  const f=e.target, msgEl=document.getElementById('contactMsg');
+  const data=await api('/api/contact', {name:f.name.value, email:f.email.value, phone:f.phone.value, message:f.message.value, website:f.website.value});
+  if(data.ok){ msgEl.textContent=data.message; msgEl.className='modal-msg ok'; f.reset(); }
+  else{ msgEl.textContent=data.error; msgEl.className='modal-msg err'; }
+  return false;
+}
+
+async function runQuiz(){
+  const data=await api('/api/quiz', {goal:qGoal.value, experience:qExp.value, days_per_week:qDays.value, preferred_training:qPref.value, available_time:qTime.value});
+  const box=document.getElementById('quizResult');
+  box.style.display='block';
+  if(!data.ok){ box.innerHTML=`<span style="color:var(--red)">${data.error}</span>`; return; }
+  let html=`<p style="color:#fff;">${data.program}</p>`;
+  if(data.plan) html+=`<p style="margin-top:10px;color:#a8a89f;font-size:.85rem;">Suggested plan: <b style="color:var(--orange)">${data.plan.name}</b> ($${data.plan.price}/mo)</p>`;
+  if(data.trainer) html+=`<p style="color:#a8a89f;font-size:.85rem;">Suggested coach: <b style="color:var(--orange)">${data.trainer.name}</b> — ${data.trainer.specialization}</p>`;
+  box.innerHTML=html;
+}
+</script>
+{% endblock %}

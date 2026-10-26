@@ -1,0 +1,26 @@
+{% extends "dash_base.html" %}
+{% block title %}Notifications · {{ gym_name }}{% endblock %}
+{% block dash_top %}<h1>Notifications</h1>{% endblock %}
+{% block dash_content %}
+<div class="dash-body">
+  <div class="panel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h2 style="margin:0;">Recent</h2>
+      {% if items %}<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn sm outline" type="submit">Mark all read</button></form>{% endif %}
+    </div>
+    {% if items %}
+      {% for n in items %}
+      <div class="panel-row" style="align-items:flex-start;">
+        <div>
+          <div style="font-weight:700; {{ 'color:#fff' if not n.read_at else 'color:#a8a89f' }}">{{ n.title }}</div>
+          {% if n.body %}<div class="muted" style="font-size:.82rem; margin-top:3px;">{{ n.body }}</div>{% endif %}
+        </div>
+        <span class="muted" style="font-size:.75rem; white-space:nowrap;">{{ n.created_at|fdt }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">No notifications yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

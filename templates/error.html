@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · {{ gym_name }}{% endblock %}
+{% block body %}
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:24px;">
+  <div>
+    <div style="font-family:var(--font-d); font-size:5rem; color:var(--orange); line-height:1;">{{ code }}</div>
+    <h1 style="font-family:var(--font-d); text-transform:uppercase; margin-top:10px;">{{ title }}</h1>
+    <p style="color:#a8a89f; margin-top:10px; max-width:40ch;">{{ msg }}</p>
+    <a href="/" class="btn-primary" style="display:inline-block; margin-top:24px; text-decoration:none;">BACK TO HOME</a>
+  </div>
+</div>
+{% endblock %}
