@@ -1,4 +1,6 @@
 import os
+import threading
+import time as _time
 from datetime import date, datetime
 
 import click
@@ -34,6 +36,29 @@ def create_app(overrides=None):
     from routes_trainer import staff as staff_bp
     for b in (site_bp, auth_bp, account_bp, member_bp, trainer_bp, staff_bp, admin_bp, api_bp):
         app.register_blueprint(b)
+
+    _job_state = {"last": 0.0, "running": False}
+
+    @app.before_request
+    def _opportunistic_jobs():
+        """For hosts with no cron (e.g. PythonAnywhere free): run the idempotent reminder/expiry jobs
+        in the background at most once an hour, triggered by a visitor. Disable: RUN_JOBS_ON_REQUEST=0"""
+        if app.config.get("TESTING") or os.environ.get("RUN_JOBS_ON_REQUEST", "1") != "1":
+            return
+        if _job_state["running"] or _time.time() - _job_state["last"] < 3600:
+            return
+        _job_state["running"], _job_state["last"] = True, _time.time()
+
+        def _go():
+            try:
+                with app.app_context():
+                    from services import run_jobs
+                    run_jobs()
+            except Exception as e:  # never affect visitors
+                print("background jobs error:", e)
+            finally:
+                _job_state["running"] = False
+        threading.Thread(target=_go, daemon=True).start()
 
     @app.before_request
     def _reset_user_cache():
